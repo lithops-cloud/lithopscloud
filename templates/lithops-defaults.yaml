@@ -1,0 +1,27 @@
+lithops:
+  mode: standalone
+  storage: ibm_cos
+
+ibm:
+  iam_api_key: <IAM_API_KEY>
+
+standalone:
+  backend: ibm_vpc
+  exec_mode: consume
+  auto_dismantle: True
+
+ibm_vpc:
+  endpoint: <REGION_ENDPOINT>
+  vpc_id: <VPC_ID>
+  resource_group_id: <RESOURCE_GROUP_ID>
+  security_group_id: <SECURITY_GROUP_ID>
+  subnet_id: <SUBNET_ID>
+  key_id: <PUBLIC_KEY_ID>
+  image_id: <IMAGE_ID_FOR_VMs>
+  zone_name: <AVAILABILTY_ZONE_NAME>
+  ssh_user: root
+  delete_on_dismantle: True
+
+ibm_cos:
+  region: <REGION>
+  storage_bucket: <BUCKET_NAME>
