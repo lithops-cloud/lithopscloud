@@ -23,9 +23,9 @@ idle_timeout_minutes: 5
 provider:
     type: external
     module: gen2.node_provider.Gen2NodeProvider
-    endpoint: https://us-east.iaas.cloud.ibm.com
-    zone_name: us-east-2
-    iam_api_key: IAM_API_KEY
+    endpoint: <ENDPOINT>
+    zone_name: <ZONE_NAME>
+    iam_api_key: <IAM_API_KEY>
     use_hybrid_ips: True
     cache_stopped_nodes: False
 
@@ -62,14 +62,14 @@ available_node_types:
         # https://cloud.ibm.com/docs/vpc
         # Alternatively use interactive vpc-config tool to generate this configuration
         node_config:
-            vpc_id: VPC_ID
-            resource_group_id: RESOURCE_GROUP_ID
-            security_group_id: SECURITY_GROUP_ID
-            subnet_id: SUBNET_ID
-            key_id: SSH_KEY_ID
-            image_id: IMAGE_ID
-            instance_profile_name: VM_PROFILE_NAME
-            volume_tier_name: VOLUME_TIER
+            vpc_id: <VPC_ID>
+            resource_group_id: <RESOURCE_GROUP_ID>
+            security_group_id: <SECURITY_GROUP_ID>
+            subnet_id: <SUBNET_ID>
+            key_id: <SSH_KEY_ID>
+            image_id: <IMAGE_ID>
+            instance_profile_name: <VM_PROFILE_NAME>
+            volume_tier_name: general-purpose
 
 # Specify the node type of the head node (as configured above).
 head_node_type: ray_head_default
