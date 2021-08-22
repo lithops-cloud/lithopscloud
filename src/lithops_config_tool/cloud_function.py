@@ -1,15 +1,16 @@
 import http.client
 import json
+import sys
+
 import requests
 
-from config.config_tool.util_func import get_option_from_list, update_config_file, free_dialog, \
-    _get_oauth_token, get_confirmation, get_resource_group_id
+from util_func import get_option_from_list, update_config_file, free_dialog, \
+    get_oauth_token, get_confirmation, get_resource_group_id
 
 CF_REGIONS = ['eu-de', 'eu-gb', 'us-south', 'us-east', 'au-syd', 'jp-tok']
 
 
 def config_cf():
-
     is_cf_based_namespace = False  # set to true if namespace is cloud foundry based
     print("\n\n Configuring IBM cloud functions:")
 
@@ -18,8 +19,7 @@ def config_cf():
     if create_new_namespace:
         region = get_option_from_list('Please choose the region you would like to create a namespace in :'
                                       , CF_REGIONS)['answer']
-        chosen_namespace = free_dialog("Please name your cloud foundry namespace: ")['answer']
-        namespace_id = create_cloud_function_namespaces(region, chosen_namespace)
+        namespace_id, chosen_namespace = create_cloud_function_namespaces(region)
 
     else:  # user would like to use an already existing namespace
         region = get_option_from_list('Please choose the region your namespace resides in :', CF_REGIONS)['answer']
@@ -50,7 +50,7 @@ def config_cf():
 
 def _get_cloud_function_namespaces_metadata(region):
     """returns meta data on namespaces of ibm cloud functions within a specified region """
-    iam_token = _get_oauth_token()
+    iam_token = get_oauth_token()
     conn = http.client.HTTPSConnection(f"{region}.functions.cloud.ibm.com")
     conn.request("GET", "/api/v1/namespaces", headers={'Authorization': iam_token})
     res = conn.getresponse()
@@ -71,13 +71,28 @@ def get_cloud_function_namespaces(region):
     return namespaces
 
 
-def create_cloud_function_namespaces(region, name):
+def create_cloud_function_namespaces(region):
     """creates a name space in a given region, under a specified resource group and returns the namespace id"""
-    iam_token = _get_oauth_token()
+    iam_token = get_oauth_token()
     resource_group_id = get_resource_group_id()[0]
     headers = {'Authorization': iam_token, 'accept': 'application/json'}
-    data = {"name": name, "resource_group_id": resource_group_id, "resource_plan_id": "functions-base-plan"}
-    response = requests.post(f'https://{region}.functions.cloud.ibm.com/api/v1/namespaces',
-                             headers=headers, json=data).json()
-    return response['id']
 
+    namespace_created = False
+    while not namespace_created:
+        try:
+            chosen_namespace = free_dialog("Please name your IBM cloud function namespace")['answer']
+            data = {"name": chosen_namespace, "resource_group_id": resource_group_id,
+                    "resource_plan_id": "functions-base-plan"}
+            response = requests.post(f'https://{region}.functions.cloud.ibm.com/api/v1/namespaces',
+                                     headers=headers, json=data).json()
+
+            if 'id' not in response.keys():
+                print("Chosen name for the namespace isn't valid. Server message:\n", response['message'])
+            else:
+                namespace_created = True
+
+        except TypeError:  # allow user to exit config tool using ctrl+c
+            print('Terminating config tool, as requested.')
+            sys.exit(0)
+
+    return response['id'], chosen_namespace

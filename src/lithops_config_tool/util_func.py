@@ -1,4 +1,3 @@
-import json
 import os
 import platform
 import subprocess
@@ -28,6 +27,7 @@ def init_iam_api_key(iam_api_key):
 def get_iam_api_key():
     return IAM_API_KEY
 
+
 def get_resource_group_id():
     return RESOURCE_GROUP_ID
 
@@ -40,7 +40,7 @@ def get_resource_instances():
     return resource_controller_service.list_resource_instances(resource_group_id=RESOURCE_GROUP_ID).get_result()
 
 
-def _get_oauth_token():
+def get_oauth_token():
     iam_token_manager = IAMTokenManager(apikey=IAM_API_KEY)
     return iam_token_manager.get_token()
 
@@ -68,7 +68,8 @@ def get_option_from_list(msg, choices, instance_to_create=None, default=None, mu
         raise Exception(f"No options were found to satisfy the following request: {msg}")
 
     if len(choices) == 1:
-        print(f'A single option was found in response to the request: "{msg}".\n{choices[0]} was automatically chosen.')
+        print(f'''A single option was found in response to the request: "{msg}".
+              \n--*-- {choices[0]} was automatically chosen --*--\n''')
         return {'answer': choices[0]}
 
     if instance_to_create:
@@ -182,8 +183,3 @@ def install_ibmcloud_plugin(plugin):
             print(stream.read())
     else:
         raise Exception("Unrecognized plugin")
-
-
-def DEBUG_PRINT_RESOURCES():
-    print('\nlist_resource_instances() response:\n',
-          json.dumps(get_resource_instances(), indent=2))

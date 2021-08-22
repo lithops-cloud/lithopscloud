@@ -3,30 +3,24 @@ import yaml
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_code_engine_sdk.ibm_cloud_code_engine_v1 import IbmCloudCodeEngineV1
 
-from config.config_tool.util_func import get_option_from_list, get_iam_api_key, get_resource_instances, \
+from util_func import get_option_from_list, get_iam_api_key, get_resource_instances, \
     update_config_file, free_dialog
 
 CE_REGIONS = ['eu-de', 'eu-gb', 'us-south', 'ca-tor', 'jp-osa', 'jp-tok']
 
 
 def config_ce():
-    global GUID
     print("\n\n Configuring Code Engine:")
 
     ce_instances = get_ce_instances()
     chosen_project = get_option_from_list('Please pick one your Code Engine projects :',
                                           list(ce_instances.keys()))['answer']
-    GUID = ce_instances[chosen_project]['guid']
+    guid = ce_instances[chosen_project]['guid']
 
-    project_namespace = get_project_namespace('us-south')
+    project_namespace = get_project_namespace('us-south', guid)
 
-    #TODO check whether asking for docker username and token will provide a suitable alternative route
-    # by abling 'lithops runtime create default -b code_engine' which will create
-    # and store a new runtime image.
-
-    runtime_image = free_dialog("""Please provide a runtime image suitable for your current lithops version.
-                                 for more information please refer to: 
-                                'https://github.com/lithops-cloud/lithops/tree/master/runtime/code_engine' """)['answer']
+    runtime_image = free_dialog("""Please provide a runtime image suitable for your current lithops version. """)[
+        'answer']
 
     update_config_file(f"""code_engine:
                           namespace: {project_namespace}
@@ -36,7 +30,7 @@ def config_ce():
     print("\n------IBM Code Engine was configured successfully------\n")
 
 
-def get_project_namespace(region):
+def get_project_namespace(region, guid):
     """returns the the namespace of a previously chosen project (identified by its guid)"""
     ce_client = IbmCloudCodeEngineV1(authenticator=IAMAuthenticator(apikey=get_iam_api_key()))
     ce_client.set_service_url(f'https://api.{region}.codeengine.cloud.ibm.com/api/v1')
@@ -55,7 +49,7 @@ def get_project_namespace(region):
 
     kubeconfig_response = ce_client.get_kubeconfig(
         x_delegated_refresh_token=delegated_refresh_token,
-        id=GUID,
+        id=guid,
     )
     kubeconfig_string = kubeconfig_response.get_result().content.decode("utf-8")
 
