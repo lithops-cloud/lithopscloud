@@ -1,5 +1,6 @@
 from lithopscloud.config_builder import update_decorator
 from lithopscloud.modules.endpoint import EndpointConfig
+from lithopscloud.modules.utils import find_default, get_option_from_list
 from typing import Any, Dict
 
 import inquirer
@@ -22,12 +23,20 @@ class WorkersConfig(EndpointConfig):
         self.base_config['cluster_name'] = answers['name']
         self.base_config['max_workers'] = int(answers['max_workers'])
 
+        
+        instance_profile_objects = self.ibm_vpc_client.list_instance_profiles().get_result()['profiles']
+    
+        default = find_default(self.base_config, instance_profile_objects, name='instance_profile_name')
+        instance_profile = get_option_from_list('Carefully choose instance profile, please refer to https://cloud.ibm.com/docs/vpc?topic=vpc-profiles', instance_profile_objects, default=default)
+        
         if self.base_config.get('available_node_types'):
             for available_node_type in self.base_config['available_node_types']:
                 self.base_config['available_node_types'][available_node_type]['min_workers'] = int(answers['min_workers'])
                 self.base_config['available_node_types'][available_node_type]['max_workers'] = int(answers['max_workers'])
+                self.base_config['available_node_types'][available_node_type]['instance_profile_name'] = instance_profile['name']
         else:
             self.base_config['available_node_types']['ray_head_default']['min_workers'] = int(answers['min_workers'])
             self.base_config['available_node_types']['ray_head_default']['max_workers'] = int(answers['max_workers'])
+            self.base_config['available_node_types']['ray_head_default']['instance_profile_name'] = instance_profile['name']
 
         return self.base_config
