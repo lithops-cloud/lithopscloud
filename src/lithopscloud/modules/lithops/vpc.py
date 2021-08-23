@@ -8,7 +8,9 @@ class LithopsVPCConfig(VPCConfig):
 
         self.vpc_name = 'lithops-cluster-vpc'
 
-    def update_config(self, vpc_obj, zone_obj, sec_group_id, subnet_id):
+    def update_config(self, vpc_obj, zone_obj, subnet_id):
+        sec_group_id = vpc_obj['default_security_group']['id']
+
         self.base_config['ibm_vpc']['vpc_id'] = vpc_obj['id']
         self.base_config['ibm_vpc']['zone_name'] = zone_obj['name']
         self.base_config['ibm_vpc']['resource_group_id'] = vpc_obj['resource_group']['id']

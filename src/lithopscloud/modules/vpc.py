@@ -17,8 +17,7 @@ class VPCConfig(ConfigBuilder):
     def run(self) -> Dict[str, Any]:
         region = get_region_by_endpoint(self.ibm_vpc_client.service_url)
         vpc_obj, zone_obj = self._select_vpc(self.ibm_vpc_client, self.resource_service_client, self.base_config, region)
-        sec_group_id = vpc_obj['default_security_group']['id']
-        
+                
         if not vpc_obj:
             raise Exception(f'Failed to select VPC')
 
@@ -30,7 +29,7 @@ class VPCConfig(ConfigBuilder):
         if not subnet_objects:
             raise f'Failed to find subnet for vpc {vpc_obj["name"]} in zone {zone_obj["name"]}'
 
-        return vpc_obj, zone_obj, sec_group_id, subnet_objects[0]['id']
+        return vpc_obj, zone_obj, subnet_objects[0]['id']
 
     def _build_security_group_rule_prototype_model(self, missing_rule, sg_id=None):
         direction, protocol, port = missing_rule.split('_')
