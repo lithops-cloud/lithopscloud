@@ -6,6 +6,7 @@ Install from pip `pip install lithopscloud`
 
 Current version supports basic lithops and ray gen2 provider confguration.
 
+```
 .
 ├── LICENSE
 ├── README.md
@@ -37,8 +38,10 @@ Current version supports basic lithops and ray gen2 provider confguration.
                 ├── ssh_key.py
                 ├── vpc.py
                 └── workers.py
+```
 
-# Need to add new unsupported sections to config file? No problem. The framework is easily extendable with new configurations
+# Need to add new unsupported sections to config file?
+# No problem. The framework is easily extendable with new configurations
 
 ## If the new configuration is provider uniqueue, e.g. [floating_ip.py](src/lithopscloud/modules/ray/floating_ip.py):
 
