@@ -45,7 +45,7 @@ class CosConfig(ConfigBuilder):
                 try:
                     if index:  # skip re-initiating client in the current region (index 0)
                         s3_client = _init_boto3_client(region)
-                    print(f"Searching for bucket in {region}...")
+#                    print(f"Searching for bucket in {region}...")
                     s3_client.get_bucket_location(Bucket=chosen_bucket)
                     bucket_location = region
                     print(f"bucket found in {region}...")
@@ -68,7 +68,7 @@ class CosConfig(ConfigBuilder):
             chosen_bucket = create_bucket(s3_client, ibm_service_instance_id)
 
         self.base_config['ibm_cos'] = {'storage_bucket': chosen_bucket, 'region': bucket_location}
-        print("\n------IBM Cloud Object Storage was configured successfully------")
+        print("\nIBM Cloud Object Storage was configured successfully")
         
         return self.base_config
 

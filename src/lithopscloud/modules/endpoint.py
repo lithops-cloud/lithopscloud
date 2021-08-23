@@ -16,5 +16,8 @@ class EndpointConfig(ConfigBuilder):
         
         default = find_default(self.base_config, regions_objects, name='region')
         region_obj = get_option_from_list("Choose region", regions_objects, default = default)
+
+        # update ibm_vpc_client to selected endpoint
+        ConfigBuilder.ibm_vpc_client.set_service_url(region_obj['endpoint'] + '/v1')
         
         return region_obj['endpoint']
