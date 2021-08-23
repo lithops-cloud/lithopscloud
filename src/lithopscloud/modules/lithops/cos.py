@@ -36,7 +36,7 @@ class CosConfig(ConfigBuilder):
         bucket_names = [bucket["Name"] for bucket in client_response['Buckets']]
 
         # TODO: use default from config (if present)
-        chosen_bucket = get_option_from_list('Please choose a bucket:', bucket_names, 'bucket')['answer']
+        chosen_bucket = get_option_from_list('Please choose a bucket', bucket_names, 'bucket')['answer']
 
         if 'Create' not in chosen_bucket:
             print('Searching for bucket in all available regions...')
