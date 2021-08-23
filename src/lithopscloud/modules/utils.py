@@ -99,8 +99,7 @@ def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None
         raise Exception(f"No options were found to satisfy the following request: {msg}")
 
     if len(choices) == 1:
-        print(f'''A single option was found in response to the request: "{msg}".
-              \n--*-- {choices[0]} was automatically chosen --*--\n''')
+        print(f"\033[92mA single option was found in response to the request: '{msg}'. \n{choices[0]} was automatically chosen\n\033[0m")
         return {'answer': choices[0]}
 
     if instance_to_create:
