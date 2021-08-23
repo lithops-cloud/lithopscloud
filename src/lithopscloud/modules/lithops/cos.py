@@ -16,12 +16,12 @@ class CosConfig(ConfigBuilder):
     def run(self) -> Dict[str, Any]:
         def _init_boto3_client(region):
             return ibm_boto3.client(service_name='s3',
-                                    ibm_api_key_id=self.iam_api_key,
+                                    ibm_api_key_id=self.base_config['ibm']['iam_api_key'],
                                     ibm_auth_endpoint="https://iam.ng.bluemix.net/oidc/token",
                                     config=Config(signature_version='oauth'),
                                     endpoint_url=f'https://s3.{region}.cloud-object-storage.appdomain.cloud')
             
-        resource_instances = self.resource_controller_service.list_resource_instances(resource_group_id=self.base_config['ibm_vpc']).get_result()
+        resource_instances = self.resource_controller_service.list_resource_instances(resource_group_id=self.base_config['ibm_vpc']['resource_group_id']).get_result()
 
         # TODO: list regions programmatically!!!
         s3_client = _init_boto3_client(BUCKET_REGIONS[0])  # initiate using a randomly chosen region

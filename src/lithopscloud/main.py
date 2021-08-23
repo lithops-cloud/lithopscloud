@@ -21,7 +21,7 @@ def get_base_config(input_file, format):
 def builder(iam_api_key, output_file, input_file, format):
     print(f"\n\033[92mWelcome to vpc config export helper\033[0m\n")
 
-    base_config = get_base_config(input_file, format, iam_api_key)
+    base_config = get_base_config(input_file, format)
 
     MODULES = importlib.import_module(f'lithopscloud.modules.{format}').MODULES
 
