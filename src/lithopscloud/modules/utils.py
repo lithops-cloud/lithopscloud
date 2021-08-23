@@ -3,9 +3,6 @@ import inquirer
 from inquirer import errors
 import os
 
-class ValidationException(Exception):
-    """Raised when config builder component is missing dependencies in the config file"""
-    pass
 
 def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothing=None):
     if(len(choices) == 0 and do_nothing==None):

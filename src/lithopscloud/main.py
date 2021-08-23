@@ -1,6 +1,5 @@
-from src.lithopscloud.modules.lithops import MODULES as LITHOPS_MODULES
-from src.lithopscloud.modules.ray import MODULES as RAY_MODULES
-from src.lithopscloud.modules.utils import ValidationException
+from lithopscloud.modules.lithops import MODULES as LITHOPS_MODULES
+from lithopscloud.modules.ray import MODULES as RAY_MODULES
 
 import yaml
 import tempfile
