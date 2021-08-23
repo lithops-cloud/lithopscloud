@@ -1,6 +1,4 @@
-from lithopscloud.modules.lithops import MODULES as LITHOPS_MODULES
-from lithopscloud.modules.ray import MODULES as RAY_MODULES
-
+import importlib
 import yaml
 import tempfile
 import click
@@ -23,13 +21,13 @@ def get_base_config(input_file, format):
 def builder(iam_api_key, output_file, input_file, format):
     print(f"\n\033[92mWelcome to vpc config export helper\033[0m\n")
 
-    base_config = get_base_config(input_file, format)
+    base_config = get_base_config(input_file, format, iam_api_key)
+
+    MODULES = importlib.import_module(f'lithopscloud.modules.{format}').MODULES
 
     if format == 'lithops':
-        MODULES = LITHOPS_MODULES
         base_config['ibm']['iam_api_key'] = iam_api_key
     else:
-        MODULES = RAY_MODULES
         base_config['provider']['iam_api_key'] = iam_api_key
 
     for module in MODULES:
