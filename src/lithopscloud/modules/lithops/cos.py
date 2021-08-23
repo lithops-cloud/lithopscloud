@@ -1,7 +1,7 @@
 from lithopscloud.config_builder import ConfigBuilder
 from typing import Any, Dict
 
-from lithopscloud.modules.utils import get_option_from_list, free_dialog
+from lithopscloud.modules.utils import free_dialog, get_option_from_list_alt as get_option_from_list
 
 import ibm_boto3
 from ibm_botocore.client import Config

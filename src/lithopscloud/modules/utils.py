@@ -90,3 +90,39 @@ def free_dialog(msg, default=None):
                       default=default)]
     answer = inquirer.prompt(question)
     return answer
+
+def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None, multiple_choice=False):
+    """prompt options to user and returns user choice.
+      :param str instance_to_create: when initialized to true adds a 'create' option that allows the user
+                            to create an instance rather than to opt for one of the options."""
+    if len(choices) == 0:
+        raise Exception(f"No options were found to satisfy the following request: {msg}")
+
+    if len(choices) == 1:
+        print(f'''A single option was found in response to the request: "{msg}".
+              \n--*-- {choices[0]} was automatically chosen --*--\n''')
+        return {'answer': choices[0]}
+
+    if instance_to_create:
+        choices.append(f'Create a new {instance_to_create}')
+
+    questions = [
+        inquirer.List('answer',
+                      message=msg,
+                      choices=choices,
+                      default=default,
+                      )] if not multiple_choice else \
+        [inquirer.Checkbox('answer',
+                           message=msg,
+                           choices=choices,
+                           default=default,
+                           )]
+
+    answers = inquirer.prompt(questions)
+
+    while not answers['answer'] and multiple_choice:
+        print("You must choose at least one option.\n"
+              "To pick an option please use the right arrow key '->' to select and the left arrow key '<-' to cancel.")
+        answers = inquirer.prompt(questions)
+
+    return answers
