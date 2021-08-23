@@ -1,7 +1,7 @@
 import logging
 
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
-from ibm_platform_services import ResourceManagerV2
+from ibm_platform_services import ResourceManagerV2, ResourceControllerV2
 from ibm_vpc import VpcV1
 
 from typing import Any, Dict
@@ -25,6 +25,7 @@ class ConfigBuilder:
     """
     ibm_vpc_client = None
     resource_service_client = None
+    resource_controller_service = None
 
     def __init__(self, base_config: Dict[str, Any]) -> None:
 
@@ -32,9 +33,11 @@ class ConfigBuilder:
             authenticator = IAMAuthenticator(self.iam_api_key)
             ConfigBuilder.ibm_vpc_client = VpcV1('2021-01-19', authenticator=authenticator)
             ConfigBuilder.resource_service_client = ResourceManagerV2(authenticator=authenticator)
+            ConfigBuilder.resource_controller_service = ResourceControllerV2(authenticator=authenticator)
 
         self.ibm_vpc_client = ConfigBuilder.ibm_vpc_client
         self.resource_service_client = ConfigBuilder.resource_service_client
+        self.resource_controller_service = ConfigBuilder.resource_controller_service
 
         self.base_config = base_config
 

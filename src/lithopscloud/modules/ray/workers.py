@@ -4,13 +4,9 @@ from typing import Any, Dict
 
 import inquirer
 import re
-from lithopscloud.vpc_config_helper import get_option_from_list
 
 class WorkersConfig(EndpointConfig):
     
-    def __init__(self, base_config: Dict[str, Any]) -> None:
-        super().__init__(base_config)
-
     def run(self) -> Dict[str, Any]:
         default_cluster_name = self.base_config.get('cluster_name', 'default')
         default_min_workers = self.base_config.get('min_workers', '0')

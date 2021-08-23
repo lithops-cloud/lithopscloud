@@ -3,8 +3,6 @@ import sys
 import ibm_boto3
 from ibm_botocore.client import Config
 from ibm_botocore.exceptions import ClientError
-from util_func import get_iam_api_key, get_option_from_list, \
-    free_dialog, update_config_file, get_resource_instances
 
 BUCKET_REGIONS = ['eu-de', 'eu-gb', 'us-south', 'us-east', 'ca-tor', 'au-syd', 'jp-osa', 'jp-tok']
 

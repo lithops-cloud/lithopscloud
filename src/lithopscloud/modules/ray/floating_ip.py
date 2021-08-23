@@ -1,14 +1,10 @@
-from lithopscloud.config_builder import update_decorator
 from lithopscloud.modules.endpoint import EndpointConfig
 from typing import Any, Dict
 
-from lithopscloud.vpc_config_helper import get_option_from_list
+from lithopscloud.modules.utils import get_option_from_list
 
 class FloatingIpConfig(EndpointConfig):
     
-    def __init__(self, base_config: Dict[str, Any]) -> None:
-        super().__init__(base_config)
-
     def run(self) -> Dict[str, Any]:
         head_ip = None
         floating_ips = self.ibm_vpc_client.list_floating_ips().get_result()['floating_ips']

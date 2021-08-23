@@ -82,3 +82,11 @@ def find_default(template_dict, objects, name=None, id=None):
                 obj = next((obj for obj in objects if obj[key] == val), None)
                 if obj:
                     return obj['name']
+
+def free_dialog(msg, default=None):
+    question = [
+        inquirer.Text('answer',
+                      message=msg,
+                      default=default)]
+    answer = inquirer.prompt(question)
+    return answer
