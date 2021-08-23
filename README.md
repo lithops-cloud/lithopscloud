@@ -12,25 +12,25 @@ Current version supports basic lithops and ray gen2 provider confguration.
 ├── README.md
 └── src
     └── lithopscloud
-        ├── \_\_init__.py
+        ├── __init__.py
         ├── __config_builder.py__
         ├── main.py
         └── modules
-            ├── \_\_init__.py
+            ├── __init__.py
             ├── endpoint.py
             ├── image.py
             ├── ssh_key.py
             ├── utils.py
             ├── vpc.py
             ├── lithops
-            │   ├── \_\_init__.py
+            │   ├── __init__.py
             │   ├── endpoint.py
             │   ├── image.py
             │   ├── defaults.yaml
             │   ├── ssh_key.py
             │   └── vpc.py
             └── ray
-                ├── \_\_init__.py
+                ├── __init__.py
                 ├── endpoint.py
                 ├── floating_ip.py
                 ├── image.py
@@ -41,7 +41,6 @@ Current version supports basic lithops and ray gen2 provider confguration.
 ```
 
 # Need to add new unsupported sections to config file?
-## The framework is easily extendable with new configurations
 
 
 ## If the new configuration is provider uniqueue, e.g. [floating_ip.py](src/lithopscloud/modules/ray/floating_ip.py):
