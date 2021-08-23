@@ -11,7 +11,7 @@ class WorkersConfig(EndpointConfig):
     def run(self) -> Dict[str, Any]:
         default_cluster_name = self.base_config.get('cluster_name', 'default')
         default_min_workers = self.base_config.get('min_workers', '0')
-        default_max_workers = self.base_config.get('max_workers', default_min_workers)
+        default_max_workers = default_min_workers
 
         question = [
             inquirer.Text('name', message="Cluster name, either leave default or type a new one", default=default_cluster_name),
