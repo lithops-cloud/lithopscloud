@@ -33,10 +33,10 @@ class WorkersConfig(EndpointConfig):
             for available_node_type in self.base_config['available_node_types']:
                 self.base_config['available_node_types'][available_node_type]['min_workers'] = int(answers['min_workers'])
                 self.base_config['available_node_types'][available_node_type]['max_workers'] = int(answers['max_workers'])
-                self.base_config['available_node_types'][available_node_type]['instance_profile_name'] = instance_profile['name']
+                self.base_config['available_node_types'][available_node_type]['node_config']['instance_profile_name'] = instance_profile['name']
         else:
             self.base_config['available_node_types']['ray_head_default']['min_workers'] = int(answers['min_workers'])
             self.base_config['available_node_types']['ray_head_default']['max_workers'] = int(answers['max_workers'])
-            self.base_config['available_node_types']['ray_head_default']['instance_profile_name'] = instance_profile['name']
+            self.base_config['available_node_types']['ray_head_default']['node_config']['instance_profile_name'] = instance_profile['name']
 
         return self.base_config
