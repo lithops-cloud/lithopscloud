@@ -1,4 +1,4 @@
-from lithopscloud.config_builder import update_decorator
+from lithopscloud.config_builder import ConfigBuilder, update_decorator
 from lithopscloud.modules.endpoint import EndpointConfig
 from lithopscloud.modules.utils import find_default, get_option_from_list
 from typing import Any, Dict
@@ -6,7 +6,7 @@ from typing import Any, Dict
 import inquirer
 import re
 
-class WorkersConfig(EndpointConfig):
+class WorkersConfig(ConfigBuilder):
     
     def run(self) -> Dict[str, Any]:
         default_cluster_name = self.base_config.get('cluster_name', 'default')
