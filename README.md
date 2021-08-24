@@ -4,6 +4,14 @@
 
 Install from pip `pip install lithopscloud`
 
+[Generate API KEY](https://www.ibm.com/docs/en/spectrumvirtualizecl/8.1.3?topic=installing-creating-api-key)
+
+Run example
+```
+lithopscloud --iam-api-key IAM_API_KEY --format lithops --output-file lithops_config.yaml
+export LITHOPS_CONFIG_FILE=lithops_config.yaml
+```
+
 Current version supports basic lithops and ray gen2 provider confguration.
 
 ```
