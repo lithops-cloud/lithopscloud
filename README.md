@@ -21,7 +21,7 @@ Current version supports basic lithops and ray gen2 provider confguration.
 └── src
     └── lithopscloud
         ├── __init__.py
-        ├── __config_builder.py__
+        ├── config_builder.py
         ├── main.py
         └── modules
             ├── __init__.py
@@ -51,7 +51,7 @@ Current version supports basic lithops and ray gen2 provider confguration.
 # Need to add new unsupported sections to config file?
 
 
-## If the new configuration is provider uniqueue, e.g. [floating_ip.py](src/lithopscloud/modules/ray/floating_ip.py):
+## If the new configuration is provider specific, e.g. [floating_ip.py](src/lithopscloud/modules/ray/floating_ip.py):
 
 1. implement [__config_builder.py__](src/lithopscloud/modules/config_builder.py) interface
 2. add your implementation under __provider__ package
