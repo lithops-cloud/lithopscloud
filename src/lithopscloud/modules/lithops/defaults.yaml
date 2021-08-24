@@ -7,7 +7,7 @@ ibm:
 
 standalone:
   backend: ibm_vpc
-  exec_mode: consume
+  exec_mode: create
   auto_dismantle: True
 
 ibm_vpc:
