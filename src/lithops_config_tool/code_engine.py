@@ -1,10 +1,9 @@
 import requests
 import yaml
-from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_code_engine_sdk.ibm_cloud_code_engine_v1 import IbmCloudCodeEngineV1
 
 from util_func import get_option_from_list, get_iam_api_key, get_resource_instances, \
-    update_config_file, free_dialog
+    update_config_file, get_authenticator
 
 CE_REGIONS = ['eu-de', 'eu-gb', 'us-south', 'ca-tor', 'jp-osa', 'jp-tok']
 
@@ -16,11 +15,13 @@ def config_ce():
     chosen_project = get_option_from_list('Please pick one your Code Engine projects :',
                                           list(ce_instances.keys()))['answer']
     guid = ce_instances[chosen_project]['guid']
+    region = ce_instances[chosen_project]['region']
 
-    project_namespace = get_project_namespace('us-south', guid)
+    project_namespace = get_project_namespace(region, guid)
 
-    runtime_image = free_dialog("""Please provide a runtime image suitable for your current lithops version. """)[
-        'answer']
+    runtime_image = input("Please provide a runtime image suitable"
+                                " for your current lithops version.\nFor more information please refer to: "
+                                "https://github.com/lithops-cloud/lithops/tree/master/runtime/code_engine ")
 
     update_config_file(f"""code_engine:
                           namespace: {project_namespace}
@@ -32,7 +33,7 @@ def config_ce():
 
 def get_project_namespace(region, guid):
     """returns the the namespace of a previously chosen project (identified by its guid)"""
-    ce_client = IbmCloudCodeEngineV1(authenticator=IAMAuthenticator(apikey=get_iam_api_key()))
+    ce_client = IbmCloudCodeEngineV1(authenticator=get_authenticator())
     ce_client.set_service_url(f'https://api.{region}.codeengine.cloud.ibm.com/api/v1')
 
     iam_response = requests.post('https://iam.cloud.ibm.com/identity/token',
@@ -67,3 +68,7 @@ def get_ce_instances():
                                                             'guid': resource['guid']}
 
     return ce_instances
+
+
+def verify_code_engine():
+    pass
