@@ -15,6 +15,10 @@ Use tool as follows
 
 ```
 lithopscloud --iam-api-key IAM_API_KEY --format lithops --output-file lithops_config.yaml
+```
+Configure Lithops to use generated configuration file
+
+```
 export LITHOPS_CONFIG_FILE=lithops_config.yaml
 ```
 
