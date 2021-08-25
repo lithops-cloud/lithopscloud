@@ -1,65 +1,42 @@
-# lithopscloud provides convinient way to generate configuration files
+# Tool to generate Lithops configuration file
 
-> Use of python virtual environment, e.g. [virtualenv](https://virtualenv.pypa.io/en/latest) is greatly encouraged, to avoid installing Python packages globally which could break system tools or other projects
+Lithopscloud is a CLI tool that greatly simplifies user experience to generate Lithops and Ray configuration file. 
 
-Install from pip `pip install lithopscloud`
+## Setup
 
-[Generate API KEY](https://www.ibm.com/docs/en/spectrumvirtualizecl/8.1.3?topic=installing-creating-api-key)
+Install `lithopscloud` from pip repository
 
-Run example
+	pip install lithopscloud
+
+Use your existing IBM Cloud an API key or generate new API Key as described [here](https://www.ibm.com/docs/en/spectrumvirtualizecl/8.1.3?topic=installing-creating-api-key)
+
+## Usage
+Use tool as follows
+
 ```
 lithopscloud --iam-api-key IAM_API_KEY --format lithops --output-file lithops_config.yaml
+```
+Configure Lithops to use generated configuration file
+
+```
 export LITHOPS_CONFIG_FILE=lithops_config.yaml
 ```
 
-Current version supports basic lithops and ray gen2 provider confguration.
+Current version supports Lithops with IBM COS and Gen2 backend. It also supports Ray-Gen2 configuration.
 
-```
-.
-├── LICENSE
-├── README.md
-└── src
-    └── lithopscloud
-        ├── __init__.py
-        ├── __config_builder.py__
-        ├── main.py
-        └── modules
-            ├── __init__.py
-            ├── endpoint.py
-            ├── image.py
-            ├── ssh_key.py
-            ├── utils.py
-            ├── vpc.py
-            ├── lithops
-            │   ├── __init__.py
-            │   ├── endpoint.py
-            │   ├── image.py
-            │   ├── defaults.yaml
-            │   ├── ssh_key.py
-            │   └── vpc.py
-            └── ray
-                ├── __init__.py
-                ├── endpoint.py
-                ├── floating_ip.py
-                ├── image.py
-                ├── defaults.yaml
-                ├── ssh_key.py
-                ├── vpc.py
-                └── workers.py
-```
-
-# Need to add new unsupported sections to config file?
+## How to add new unsupported sections to config file
 
 
-## If the new configuration is provider uniqueue, e.g. [floating_ip.py](src/lithopscloud/modules/ray/floating_ip.py):
+### If the new configuration is provider specific
 
 1. implement [__config_builder.py__](src/lithopscloud/modules/config_builder.py) interface
 2. add your implementation under __provider__ package
 3. add reference to your implementation in the list of exported modules, e.g. [lithops modules](src/lithopscloud/modules/lithops/__init__.py__)
 
 
-## If the new configuration is common for multiple providers, e.g. [image.py](src/lithopscloud/modules/image.py):
+### If the new configuration is common for multiple providers
 
 1. implement [__config_builder.py__](src/lithopscloud/modules/config_builder.py) interface to hold common logic
 2. add your implementation to __modules__ package
 3. extend your common implementation under each provider package, e.g. [lithops image.py](src/lithopscloud/modules/lithops/image.py) and [ray image.py](src/lithopscloud/modules/ray/image.py) to have config file specific logic
+
