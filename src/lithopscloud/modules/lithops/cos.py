@@ -23,6 +23,11 @@ class CosConfig(ConfigBuilder):
             
         resource_instances = self.resource_controller_service.list_resource_instances(resource_group_id=self.base_config['ibm_vpc']['resource_group_id']).get_result()
 
+
+        # TODO: replace with logger.debug later
+        print(f"listed resource instances under resource_group_id {self.base_config['ibm_vpc']['resource_group_id']}")
+        print(f'resource_instances: {resource_instances}')
+
         # TODO: list regions programmatically!!!
         s3_client = _init_boto3_client(BUCKET_REGIONS[0])  # initiate using a randomly chosen region
 
@@ -95,7 +100,10 @@ def get_cos_instances(resource_instances):
     storage_instances = []
     for resource in resource_instances['resources']:
         if 'cloud-object-storage' in resource['id']:
+            #TODO: remove
+            print(f"cloud-object-storage not in {resource['id']}")
             storage_instances.append(resource['name'])
+    
     return storage_instances
 
 
