@@ -1,5 +1,5 @@
 from lithopscloud.modules.api_key import ApiKeyConfig
-from lithopscloud.modules import ApiKeyConfig
+from lithopscloud.modules.api_key import ApiKeyConfig
 
 class RayApiKeyConfig(ApiKeyConfig):
 
