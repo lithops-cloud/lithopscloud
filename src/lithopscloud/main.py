@@ -4,6 +4,7 @@ import pkg_resources
 import os
 import click
 import yaml
+from lithopscloud.modules import api_key
 
 from lithopscloud.modules.utils import get_option_from_list
 
@@ -47,12 +48,22 @@ def select_backend(input_file, iam_api_key):
 
         input_file = f"{dir_path}/modules/{backend['path'].replace('.', '/')}/defaults.yaml"
 
-        # import pdb;pdb.set_trace()
         with open(input_file) as f:
             base_config = yaml.safe_load(f)
 
     # now find the right modules
     modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
+
+    if iam_api_key:
+        # ugly hack to support case when api_key been provided by user as parameter to lithopscloud
+        # TODO: consider better approach
+        # we know that the first module has to be API_KEY module
+        # we invoke the first module with provided api key and pop it from list
+        api_key_module = modules[0]
+        api_key_module.run(api_key=iam_api_key)
+
+        modules = modules[1:]
+
     return base_config, modules
 
 
@@ -61,7 +72,6 @@ def select_backend(input_file, iam_api_key):
 @click.option('--input-file', '-i', help=f'Template for the new configuration')
 @click.option('--iam-api-key', help='IAM_API_KEY')
 @click.option('--version', '-v', help=f'Get package version', is_flag=True)
-# @click.option('--format', type=click.Choice(['lithops', 'ray']), required=True, help='format of the output file')
 def builder(iam_api_key, output_file, input_file, version):
 
     if version:
@@ -71,11 +81,6 @@ def builder(iam_api_key, output_file, input_file, version):
     print(f"\n\033[92mWelcome to vpc config export helper\033[0m\n")
 
     base_config, modules = select_backend(input_file, iam_api_key)
-
-    # if format == 'lithops':
-    #     base_config['ibm']['iam_api_key'] = iam_api_key
-    # else:
-    #     base_config['provider']['iam_api_key'] = iam_api_key
 
     for module in modules:        
         next_module = module(base_config)

@@ -12,18 +12,20 @@ class ApiKeyConfig(ConfigBuilder):
             'ibm', {}) else None
 
     @update_decorator
-    def run(self, apikey=None) -> Dict[str, Any]:
-        default = self.defaults.get('api_key')
+    def run(self, api_key=None) -> Dict[str, Any]:
+        if not api_key:
+            default = self.defaults.get('api_key')
 
-        questions = [
-            inquirer.Text(
-                "iam_api_key", message='Please provide \033[92mIBM API KEY \033[0m', default=default)
-        ]
+            questions = [
+                inquirer.Text(
+                    "iam_api_key", message='Please provide \033[92mIBM API KEY \033[0m', default=default)
+            ]
 
-        answers = inquirer.prompt(questions)
+            answers = inquirer.prompt(questions)
+            api_key = answers["iam_api_key"]
 
-        ConfigBuilder.iam_api_key = answers["iam_api_key"]
-        return answers["iam_api_key"]
+        ConfigBuilder.iam_api_key = api_key
+        return api_key
 
     def update_config(self, iam_api_key) -> Dict[str, Any]:
         self.base_config['ibm'] = {'iam_api_key': iam_api_key}

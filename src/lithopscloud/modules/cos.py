@@ -23,12 +23,30 @@ class CosConfig(ConfigBuilder):
                                     config=Config(signature_version='oauth'),
                                     endpoint_url=f'https://s3.{region}.cloud-object-storage.appdomain.cloud')
 
-        resource_instances = self.resource_controller_service.list_resource_instances(
-            resource_group_id=self.base_config['ibm_vpc']['resource_group_id'], type='service_instance', limit=1000).get_result()
+        def _get_all_service_instances():
+            res = self.resource_controller_service.list_resource_instances(
+                resource_group_id=self.base_config['ibm_vpc']['resource_group_id'], type='service_instance', limit=1).get_result()
+            resource_instances = res['resources']
+
+            while res['next_url']:
+                start = res['next_url'].split('start=')[1]
+
+                print(f"id: {res['resources'][0]['id']}")
+
+                res = self.resource_controller_service.list_resource_instances(
+                resource_group_id=self.base_config['ibm_vpc']['resource_group_id'], type='service_instance', limit=1, start=start).get_result()
+
+                resource_instances.extend(res['resources'])
+
+            print(f'res len {len(resource_instances)}')
+            return resource_instances
 
         # TODO: list regions programmatically!!!
         # initiate using a randomly chosen region
         s3_client = _init_boto3_client(BUCKET_REGIONS[0])
+
+        # get all service resource instances
+        resource_instances = _get_all_service_instances()
 
         # TODO: use default from config (if present)
         selected_storage_name = get_option_from_list(
@@ -108,7 +126,7 @@ def create_bucket(s3_client, ibm_service_instance_id):
 def get_cos_instances(resource_instances):
     """return available cos instances by name"""
     storage_instances = []
-    for resource in resource_instances['resources']:
+    for resource in resource_instances:
         if 'cloud-object-storage' in resource['id']:
             storage_instances.append(resource['name'])
     return storage_instances
@@ -116,6 +134,6 @@ def get_cos_instances(resource_instances):
 
 def get_service_instance_id(storage_name, resource_instances):
     """returns CRN of selected storage instance"""
-    for resource in resource_instances['resources']:
+    for resource in resource_instances:
         if storage_name in resource['name']:
             return resource['id']
