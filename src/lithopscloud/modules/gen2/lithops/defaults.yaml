@@ -1,0 +1,27 @@
+lithops:
+  mode: standalone
+  storage: ibm_cos
+
+ibm:
+  iam_api_key: ""
+
+standalone:
+  backend: ibm_vpc
+  exec_mode: create
+  auto_dismantle: True
+
+ibm_vpc:
+  endpoint: ""
+  vpc_id: ""
+  resource_group_id: ""
+  security_group_id: ""
+  subnet_id: ""
+  key_id: ""
+  image_id: ""
+  zone_name: ""
+  ssh_user: root
+  delete_on_dismantle: True
+
+ibm_cos:
+  region: ""
+  storage_bucket: ""
