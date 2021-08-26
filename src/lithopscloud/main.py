@@ -60,7 +60,7 @@ def select_backend(input_file, iam_api_key):
         # we know that the first module has to be API_KEY module
         # we invoke the first module with provided api key and pop it from list
         api_key_module = modules[0]
-        api_key_module.run(api_key=iam_api_key)
+        base_config = api_key_module(base_config).run(api_key=iam_api_key)
 
         modules = modules[1:]
 

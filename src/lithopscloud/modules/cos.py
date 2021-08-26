@@ -25,16 +25,14 @@ class CosConfig(ConfigBuilder):
 
         def _get_all_service_instances():
             res = self.resource_controller_service.list_resource_instances(
-                resource_group_id=self.base_config['ibm_vpc']['resource_group_id'], type='service_instance', limit=1).get_result()
+                resource_group_id=self.base_config['ibm_vpc']['resource_group_id'], type='service_instance').get_result()
             resource_instances = res['resources']
 
             while res['next_url']:
                 start = res['next_url'].split('start=')[1]
 
-                print(f"id: {res['resources'][0]['id']}")
-
                 res = self.resource_controller_service.list_resource_instances(
-                resource_group_id=self.base_config['ibm_vpc']['resource_group_id'], type='service_instance', limit=1, start=start).get_result()
+                resource_group_id=self.base_config['ibm_vpc']['resource_group_id'], type='service_instance', start=start).get_result()
 
                 resource_instances.extend(res['resources'])
 
