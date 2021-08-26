@@ -16,7 +16,7 @@ class RuntimeConfig(ConfigBuilder):
                 'name', message="Runtime name, either leave default or type a new one", default=default_runtime_name)
         ]
 
-        answers = inquirer.prompt(question)
+        answers = inquirer.prompt(question, raise_keyboard_interrupt=True)
         self.base_config['standalone']['runtime'] = answers['name']
 
         return self.base_config

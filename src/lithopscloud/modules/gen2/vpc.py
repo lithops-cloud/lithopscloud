@@ -73,7 +73,7 @@ class VPCConfig(ConfigBuilder):
                           'yes', 'no'], default='yes')
         ]
 
-        answers = inquirer.prompt(q)
+        answers = inquirer.prompt(q, raise_keyboard_interrupt=True)
         if answers['answer'] == 'yes':
             vpc_obj = ibm_vpc_client.create_vpc(address_prefix_management='auto', classic_access=False,
                                                 name=answers['name'], resource_group=resource_group).get_result()

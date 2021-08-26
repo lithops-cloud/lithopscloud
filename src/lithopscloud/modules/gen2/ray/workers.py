@@ -22,7 +22,7 @@ class WorkersConfig(ConfigBuilder):
                           validate=lambda answers, x: re.match('^[+]?[0-9]+$', x) and int(x) >= int(answers['min_workers']))
         ]
 
-        answers = inquirer.prompt(question)
+        answers = inquirer.prompt(question, raise_keyboard_interrupt=True)
         self.base_config['cluster_name'] = answers['name']
         self.base_config['max_workers'] = int(answers['max_workers'])
 

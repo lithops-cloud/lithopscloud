@@ -20,7 +20,7 @@ def validate_security_group(ibm_vpc_client, sec_group_id):
                           choices=['yes', 'no'], default='yes'
                           ), ]
 
-        answers = inquirer.prompt(questions)
+        answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
         if answers['answer'] == 'yes':
             add_rules_to_security_group(ibm_vpc_client, sec_group_id, errors)
@@ -106,7 +106,7 @@ def add_rules_to_security_group(ibm_vpc_client, sg_id, missing_rules):
                           default='yes')
         ]
 
-        answers = inquirer.prompt(q)
+        answers = inquirer.prompt(q, raise_keyboard_interrupt=True)
         if answers['answer'] == 'yes':
             security_group_rule_prototype_model = build_security_group_rule_prototype_model(
                 missing_rule, sg_id=sg_id)

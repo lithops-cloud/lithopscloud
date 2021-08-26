@@ -21,7 +21,7 @@ class ApiKeyConfig(ConfigBuilder):
                     "iam_api_key", message='Please provide \033[92mIBM API KEY \033[0m', default=default)
             ]
 
-            answers = inquirer.prompt(questions)
+            answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
             api_key = answers["iam_api_key"]
 
         ConfigBuilder.iam_api_key = api_key

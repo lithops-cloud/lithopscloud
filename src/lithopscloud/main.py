@@ -98,4 +98,10 @@ def builder(iam_api_key, output_file, input_file, version):
 
 
 if __name__ == '__main__':
-    builder()
+# from sys import exit
+
+    try:
+        builder()
+    except KeyboardInterrupt:
+        # User interrupt the program
+        exit()

@@ -24,7 +24,7 @@ def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothi
                       choices=choices_keys,
                       default=default,
                       ), ]
-    answers = inquirer.prompt(questions)
+    answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
     # now find the object by name in the list
     if answers['answer'] == do_nothing:
@@ -99,7 +99,7 @@ def free_dialog(msg, default=None):
         inquirer.Text('answer',
                       message=msg,
                       default=default)]
-    answer = inquirer.prompt(question)
+    answer = inquirer.prompt(question, raise_keyboard_interrupt=True)
     return answer
 
 
@@ -131,7 +131,7 @@ def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None
                            default=default,
                            )]
 
-    answers = inquirer.prompt(questions)
+    answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
     while not answers['answer'] and multiple_choice:
         print("You must choose at least one option.\n"

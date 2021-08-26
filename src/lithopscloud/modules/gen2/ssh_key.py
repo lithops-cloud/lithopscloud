@@ -19,7 +19,7 @@ def register_ssh_key(ibm_vpc_client, config):
         inquirer.Text(
             'keyname', message='Please specify a name for the new key', validate=validate_not_empty)
     ]
-    answers = inquirer.prompt(questions)
+    answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
     keyname = answers['keyname']
 
     EXISTING_CONTENTS = 'Paste existing public key contents'
@@ -32,7 +32,7 @@ def register_ssh_key(ibm_vpc_client, config):
                       choices=[EXISTING_PATH, EXISTING_CONTENTS, GENERATE_NEW]
                       )]
 
-    answers = inquirer.prompt(questions)
+    answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
     ssh_key_data = ""
     ssh_key_path = None
     if answers["answer"] == EXISTING_CONTENTS:
@@ -45,7 +45,7 @@ def register_ssh_key(ibm_vpc_client, config):
             inquirer.Text(
                 "public_key_path", message='Please paste path to your \033[92mpublic\033[0m ssh key', validate=validate_exists)
         ]
-        answers = inquirer.prompt(questions)
+        answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
         with open(answers["public_key_path"], 'r') as file:
             ssh_key_data = file.read()
@@ -97,7 +97,7 @@ class SshKeyConfig(ConfigBuilder):
                 inquirer.Text(
                     "private_key_path", message=f'Please paste path to \033[92mprivate\033[0m ssh key associated with selected public key {ssh_key_name}', validate=validate_exists, default=self.defaults.get('ssh_key_filename') or "~/.ssh/id_rsa")
             ]
-            answers = inquirer.prompt(questions)
+            answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
             ssh_key_path = os.path.abspath(
                 os.path.expanduser(answers["private_key_path"]))
 
