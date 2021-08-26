@@ -21,7 +21,7 @@ class CosConfig(ConfigBuilder):
                                     config=Config(signature_version='oauth'),
                                     endpoint_url=f'https://s3.{region}.cloud-object-storage.appdomain.cloud')
             
-        resource_instances = self.resource_controller_service.list_resource_instances(resource_group_id=self.base_config['ibm_vpc']['resource_group_id']).get_result()
+        resource_instances = self.resource_controller_service.list_resource_instances(resource_group_id=self.base_config['ibm_vpc']['resource_group_id'], type='service_instance', limit=1000).get_result()
 
 
         # TODO: replace with logger.debug later
@@ -101,8 +101,10 @@ def get_cos_instances(resource_instances):
     for resource in resource_instances['resources']:
         if 'cloud-object-storage' in resource['id']:
             #TODO: remove
-            print(f"cloud-object-storage not in {resource['id']}")
+            print(f"cloud-object-storage in {resource['id']}")
             storage_instances.append(resource['name'])
+        else:
+            print(f"cloud-object-storage not in {resource['id']}")
     
     return storage_instances
 
