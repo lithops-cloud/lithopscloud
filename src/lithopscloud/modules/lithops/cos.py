@@ -33,7 +33,6 @@ class CosConfig(ConfigBuilder):
 
                 resource_instances.extend(res['resources'])
 
-            print(f'res len {len(resource_instances)}')
             return resource_instances
 
         # get all service resource instances
@@ -115,11 +114,7 @@ def get_cos_instances(resource_instances):
     storage_instances = []
     for resource in resource_instances:
         if 'cloud-object-storage' in resource['id']:
-            #TODO: remove
-            print(f"cloud-object-storage in {resource['id']}")
             storage_instances.append(resource['name'])
-        else:
-            print(f"cloud-object-storage not in {resource['id']}")
     
     return storage_instances
 
