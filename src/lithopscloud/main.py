@@ -9,9 +9,10 @@ from lithopscloud.modules import api_key
 from lithopscloud.modules.utils import get_option_from_list
 
 
+LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2 = 'Lithops Gen2', 'Lithops Cloud Functions', 'Lithops Code Engine', 'Ray Gen2'
+
 def select_backend(input_file, iam_api_key):
     # select backend
-    LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2 = 'Lithops Gen2', 'Lithops Cloud Functions', 'Lithops Code Engine', 'Ray Gen2'
     backends = [
                 {'name': LITHOPS_GEN2, 'path': 'gen2.lithops'}, 
                 {'name': LITHOPS_CF, 'path': 'cloud_functions'},
@@ -38,8 +39,14 @@ def select_backend(input_file, iam_api_key):
     elif base_config.get('provider'):
         default = RAY_GEN2
 
+    def validate(answers, current):
+        if current == LITHOPS_CE or current == LITHOPS_CF:
+            from inquirer.errors import ValidationError
+            raise ValidationError(current, reason=f'{current} not supported yet by this project')
+        return True
+
     backend = get_option_from_list(
-        "Please select backend", backends, default=default)
+        "Please select backend", backends, default=default, validate=validate)
 
     # in case input file didn't match selected option we either need to raise error or start it from scratch (defaults), currently startin from defaults
     # import pdb;pdb.set_trace()
@@ -98,10 +105,9 @@ def builder(iam_api_key, output_file, input_file, version):
 
 
 if __name__ == '__main__':
-# from sys import exit
-
     try:
         builder()
     except KeyboardInterrupt:
         # User interrupt the program
         exit()
+
