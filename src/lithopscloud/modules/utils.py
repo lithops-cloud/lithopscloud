@@ -5,7 +5,7 @@ import inquirer
 from inquirer import errors
 
 
-def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothing=None):
+def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothing=None, validate=True):
     if(len(choices) == 0 and do_nothing == None):
         error_msg = f"There no option for {msg}"
         print(error_msg)
@@ -23,6 +23,7 @@ def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothi
                       message=msg,
                       choices=choices_keys,
                       default=default,
+                      validate=validate,
                       ), ]
     answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 

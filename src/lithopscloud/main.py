@@ -39,7 +39,7 @@ def select_backend(input_file, iam_api_key):
         default = RAY_GEN2
 
     backend = get_option_from_list(
-        "Please select backend", backends, default=default)
+        "Please select backend", backends, default=default, validate=lambda choice : choice != LITHOPS_CE and choice != LITHOPS_CF)
 
     # in case input file didn't match selected option we either need to raise error or start it from scratch (defaults), currently startin from defaults
     # import pdb;pdb.set_trace()
@@ -98,8 +98,6 @@ def builder(iam_api_key, output_file, input_file, version):
 
 
 if __name__ == '__main__':
-# from sys import exit
-
     try:
         builder()
     except KeyboardInterrupt:
