@@ -36,7 +36,7 @@ class CosConfig(ConfigBuilder):
 
                 resource_instances.extend(res['resources'])
 
-            print(f'res len {len(resource_instances)}')
+            # print(f'res len {len(resource_instances)}')
             return resource_instances
 
         # TODO: list regions programmatically!!!

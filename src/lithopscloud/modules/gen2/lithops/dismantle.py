@@ -7,8 +7,9 @@ from lithopscloud.modules.config_builder import ConfigBuilder
 class DismantleConfig(ConfigBuilder):
 
     def run(self) -> Dict[str, Any]:
-        STOP_AFTER_FINISHED = f'After grace period \033[92mstop\033[0m VM when task finished'
-        DELETE_AFTER_FINISHED = f'After grace period \033[92mdelete\033[0m VM when task finished'
+        print('\n')
+        STOP_AFTER_FINISHED = f'\033[92mStop\033[0m VM after grace period when task finished'
+        DELETE_AFTER_FINISHED = f'\033[92mDelete\033[0m VM after grace period when task finished'
         KEEP = f'\033[92mKeep\033[0m VM after task finished'
 
         default_auto_dismantle = self.base_config['standalone'].get(
