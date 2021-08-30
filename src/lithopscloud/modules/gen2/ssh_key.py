@@ -1,8 +1,10 @@
-from lithopscloud.config_builder import ConfigBuilder, update_decorator
-from typing import Any, Dict
-import inquirer
-from lithopscloud.modules.utils import find_default, find_name_id, validate_not_empty, validate_exists
 import os
+from typing import Any, Dict
+
+import inquirer
+from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator
+from lithopscloud.modules.utils import (find_default, find_name_id,
+                                        validate_exists, validate_not_empty)
 
 
 def register_ssh_key(ibm_vpc_client, config):
@@ -17,7 +19,7 @@ def register_ssh_key(ibm_vpc_client, config):
         inquirer.Text(
             'keyname', message='Please specify a name for the new key', validate=validate_not_empty)
     ]
-    answers = inquirer.prompt(questions)
+    answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
     keyname = answers['keyname']
 
     EXISTING_CONTENTS = 'Paste existing public key contents'
@@ -30,7 +32,7 @@ def register_ssh_key(ibm_vpc_client, config):
                       choices=[EXISTING_PATH, EXISTING_CONTENTS, GENERATE_NEW]
                       )]
 
-    answers = inquirer.prompt(questions)
+    answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
     ssh_key_data = ""
     ssh_key_path = None
     if answers["answer"] == EXISTING_CONTENTS:
@@ -43,7 +45,7 @@ def register_ssh_key(ibm_vpc_client, config):
             inquirer.Text(
                 "public_key_path", message='Please paste path to your \033[92mpublic\033[0m ssh key', validate=validate_exists)
         ]
-        answers = inquirer.prompt(questions)
+        answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
         with open(answers["public_key_path"], 'r') as file:
             ssh_key_data = file.read()
@@ -81,7 +83,7 @@ class SshKeyConfig(ConfigBuilder):
 
         CREATE_NEW_SSH_KEY = "Register new SSH key in IBM VPC"
 
-        default = find_default(self.base_config, ssh_key_objects, id='key_id')
+        default = find_default(self.defaults, ssh_key_objects, id='key_id')
         ssh_key_name, ssh_key_id = find_name_id(
             ssh_key_objects, 'Choose ssh key', do_nothing=CREATE_NEW_SSH_KEY, default=default)
 
@@ -93,10 +95,11 @@ class SshKeyConfig(ConfigBuilder):
         if not ssh_key_path:
             questions = [
                 inquirer.Text(
-                    "private_key_path", message=f'Please paste path to \033[92mprivate\033[0m ssh key associated with selected public key {ssh_key_name}', validate=validate_exists, default="~/.ssh/id_rsa")
+                    "private_key_path", message=f'Please paste path to \033[92mprivate\033[0m ssh key associated with selected public key {ssh_key_name}', validate=validate_exists, default=self.defaults.get('ssh_key_filename') or "~/.ssh/id_rsa")
             ]
-            answers = inquirer.prompt(questions)
+            answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
             ssh_key_path = os.path.abspath(
                 os.path.expanduser(answers["private_key_path"]))
 
+        # currently the user is hardcoded to root
         return ssh_key_id, ssh_key_path, 'root'

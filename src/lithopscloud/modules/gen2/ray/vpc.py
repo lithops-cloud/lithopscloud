@@ -1,29 +1,32 @@
-from lithopscloud.modules.vpc import VPCConfig
 from typing import Any, Dict
-import inquirer
 
-REQUIRED_RULES = {'outbound_tcp_all': 'selected security group is missing rule permitting outbound TCP access\n', 'outbound_udp_all': 'selected security group is missing rule permitting outbound UDP access\n', 'inbound_tcp_sg': 'selected security group is missing rule permiting inbound tcp traffic inside selected security group\n', 'inbound_tcp_22': 'selected security group is missing rule permiting inbound traffic to tcp port 22 required for ssh\n', 'inbound_tcp_6379': 'selected security group is missing rule permiting inbound traffic to tcp port 6379 required for Redis\n', 'inbound_tcp_8265': 'selected security group is missing rule permiting inbound traffic to tcp port 8265 required to access Ray Dashboard\n'}
+import inquirer
+from lithopscloud.modules.gen2.vpc import VPCConfig
+
+REQUIRED_RULES = {'outbound_tcp_all': 'selected security group is missing rule permitting outbound TCP access\n', 'outbound_udp_all': 'selected security group is missing rule permitting outbound UDP access\n', 'inbound_tcp_sg': 'selected security group is missing rule permiting inbound tcp traffic inside selected security group\n',
+                  'inbound_tcp_22': 'selected security group is missing rule permiting inbound traffic to tcp port 22 required for ssh\n', 'inbound_tcp_6379': 'selected security group is missing rule permiting inbound traffic to tcp port 6379 required for Redis\n', 'inbound_tcp_8265': 'selected security group is missing rule permiting inbound traffic to tcp port 8265 required to access Ray Dashboard\n'}
+
 
 def validate_security_group(ibm_vpc_client, sec_group_id):
     errors = validate_security_group_rules(ibm_vpc_client, sec_group_id)
-    
+
     if errors:
         for val in errors.values():
             print(f"\033[91m{val}\033[0m")
 
         questions = [
             inquirer.List('answer',
-                message='Selected security group is missing required rules, see error above, update with required rules?',
-                choices=['yes', 'no'], default='yes'
-            ),]
+                          message='Selected security group is missing required rules, see error above, update with required rules?',
+                          choices=['yes', 'no'], default='yes'
+                          ), ]
 
-        answers = inquirer.prompt(questions)
+        answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
         if answers['answer'] == 'yes':
             add_rules_to_security_group(ibm_vpc_client, sec_group_id, errors)
         else:
             exit(1)
-        
+
         # just in case, validate again the updated/created security group
         errors = validate_security_group_rules(ibm_vpc_client, sec_group_id)
         if not errors:
@@ -33,6 +36,7 @@ def validate_security_group(ibm_vpc_client, sec_group_id):
             exit(1)
     else:
         return
+
 
 def validate_security_group_rules(ibm_vpc_client, sg_id):
     required_rules = REQUIRED_RULES.copy()
@@ -84,30 +88,34 @@ def validate_security_group_rules(ibm_vpc_client, sg_id):
 
     return required_rules
 
+
 def add_rules_to_security_group(ibm_vpc_client, sg_id, missing_rules):
     add_rule_msgs = {
-            'outbound_tcp_all': f'Add rule to open all outbound TCP ports in selected security group {sg_id}',
-            'outbound_udp_all': f'Add rule to open all outbound UDP ports in selected security group {sg_id}',
-            'inbound_tcp_sg': f'Add rule to open inbound tcp traffic inside selected security group {sg_id}',
-            'inbound_tcp_22': f'Add rule to open inbound tcp port 22 required for SSH in selected security group {sg_id}',
-            'inbound_tcp_6379': f'Add rule to open inbound tcp port 6379 required for Redis in selected security group {sg_id}',
-            'inbound_tcp_8265': f'Add rule to open inbound tcp port 8265 required to access Ray Dashboard in selected security group {sg_id}'}
+        'outbound_tcp_all': f'Add rule to open all outbound TCP ports in selected security group {sg_id}',
+        'outbound_udp_all': f'Add rule to open all outbound UDP ports in selected security group {sg_id}',
+        'inbound_tcp_sg': f'Add rule to open inbound tcp traffic inside selected security group {sg_id}',
+        'inbound_tcp_22': f'Add rule to open inbound tcp port 22 required for SSH in selected security group {sg_id}',
+        'inbound_tcp_6379': f'Add rule to open inbound tcp port 6379 required for Redis in selected security group {sg_id}',
+        'inbound_tcp_8265': f'Add rule to open inbound tcp port 8265 required to access Ray Dashboard in selected security group {sg_id}'}
 
     for missing_rule in missing_rules.keys():
         q = [
-                inquirer.List('answer',
-                message=add_rule_msgs[missing_rule],
-                choices=['yes', 'no'],
-                default='yes')
-            ]
+            inquirer.List('answer',
+                          message=add_rule_msgs[missing_rule],
+                          choices=['yes', 'no'],
+                          default='yes')
+        ]
 
-        answers = inquirer.prompt(q)
+        answers = inquirer.prompt(q, raise_keyboard_interrupt=True)
         if answers['answer'] == 'yes':
-            security_group_rule_prototype_model = build_security_group_rule_prototype_model(missing_rule, sg_id=sg_id)
-            ibm_vpc_client.create_security_group_rule(sg_id, security_group_rule_prototype_model).get_result()
+            security_group_rule_prototype_model = build_security_group_rule_prototype_model(
+                missing_rule, sg_id=sg_id)
+            ibm_vpc_client.create_security_group_rule(
+                sg_id, security_group_rule_prototype_model).get_result()
         else:
             return False
     return True
+
 
 def build_security_group_rule_prototype_model(missing_rule, sg_id=None):
     direction, protocol, port = missing_rule.split('_')
@@ -134,11 +142,11 @@ def build_security_group_rule_prototype_model(missing_rule, sg_id=None):
         'remote': remote,
         'port_min': port_min,
         'port_max': port_max
-        }
-        
+    }
+
 
 class RayVPCConfig(VPCConfig):
-    
+
     def __init__(self, base_config: Dict[str, Any]) -> None:
         super().__init__(base_config)
 
@@ -147,20 +155,22 @@ class RayVPCConfig(VPCConfig):
 
     def update_config(self, vpc_obj, zone_obj, subnet_id):
         sec_group_id = vpc_obj['default_security_group']['id']
-        
+
         validate_security_group(self.ibm_vpc_client, sec_group_id)
 
         self.base_config['provider']['zone_name'] = zone_obj['name']
 
         node_config = {
-                'vpc_id': vpc_obj['id'],
-                'resource_group_id': vpc_obj['resource_group']['id'],
-                'security_group_id': sec_group_id,
-                'subnet_id': subnet_id
+            'vpc_id': vpc_obj['id'],
+            'resource_group_id': vpc_obj['resource_group']['id'],
+            'security_group_id': sec_group_id,
+            'subnet_id': subnet_id
         }
-        
+
         if self.base_config.get('available_node_types'):
             for available_node_type in self.base_config['available_node_types']:
-                self.base_config['available_node_types'][available_node_type]['node_config'].update(node_config)
+                self.base_config['available_node_types'][available_node_type]['node_config'].update(
+                    node_config)
         else:
-            self.base_config['available_node_types'] = {'ray_head_default': {'node_config': node_config}}
+            self.base_config['available_node_types'] = {
+                'ray_head_default': {'node_config': node_config}}
