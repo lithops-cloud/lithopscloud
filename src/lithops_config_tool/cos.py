@@ -3,6 +3,8 @@ import sys
 import ibm_boto3
 from ibm_botocore.client import Config
 from ibm_botocore.exceptions import ClientError
+from lithops_config_tool.util_func import free_dialog, get_option_from_list, update_config_file, get_iam_api_key, \
+    get_resource_instances
 
 BUCKET_REGIONS = ['eu-de', 'eu-gb', 'us-south', 'us-east', 'ca-tor', 'au-syd', 'jp-osa', 'jp-tok']
 
