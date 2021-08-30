@@ -1,10 +1,8 @@
 import http.client
 import json
 import sys
-
 import requests
-
-from util_func import get_option_from_list, update_config_file, free_dialog, \
+from util_func import get_option_from_list, update_config_file, \
     get_oauth_token, get_confirmation, get_resource_group_id
 
 CF_REGIONS = ['eu-de', 'eu-gb', 'us-south', 'us-east', 'au-syd', 'jp-tok']
@@ -28,8 +26,8 @@ def config_cf():
                                                 list(cloud_namespaces.keys()))['answer']
 
         if cloud_namespaces[chosen_namespace]['type'] == 'CF_based':
-            cf_api_key = free_dialog("Please provide your cloud foundry api_key from: "
-                                     "https://cloud.ibm.com/functions/namespace-settings ")['answer']
+            cf_api_key = input("Please provide your cloud foundry api_key from: "
+                                     "https://cloud.ibm.com/functions/namespace-settings ")
             update_config_file(f"""ibm_cf:
                                     endpoint: https://{region}.functions.cloud.ibm.com
                                     namespace: {chosen_namespace}
@@ -80,7 +78,8 @@ def create_cloud_function_namespaces(region):
     namespace_created = False
     while not namespace_created:
         try:
-            chosen_namespace = free_dialog("Please name your IBM cloud function namespace")['answer']
+            # chosen_namespace = free_dialog("Please name your IBM cloud function namespace")['answer']
+            chosen_namespace = input("Please name your IBM cloud function namespace")
             data = {"name": chosen_namespace, "resource_group_id": resource_group_id,
                     "resource_plan_id": "functions-base-plan"}
             response = requests.post(f'https://{region}.functions.cloud.ibm.com/api/v1/namespaces',
@@ -96,3 +95,7 @@ def create_cloud_function_namespaces(region):
             sys.exit(0)
 
     return response['id'], chosen_namespace
+
+
+def verify_ibm_cf():
+    pass
