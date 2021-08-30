@@ -1,12 +1,12 @@
 # Tool to generate Lithops configuration file
 
-Lithopscloud is a CLI tool that greatly simplifies user experience to generate Lithops and Ray configuration file. 
+Lithopscloud is a CLI tool that greatly simplifies user experience to generate Lithops and Ray configuration file.
 
 ## Setup
 
 Install `lithopscloud` from pip repository
 
-	pip install lithopscloud
+        pip install lithopscloud
 
 Use your existing IBM Cloud an API key or generate new API Key as described [here](https://www.ibm.com/docs/en/spectrumvirtualizecl/8.1.3?topic=installing-creating-api-key)
 
@@ -39,4 +39,3 @@ Current version supports Lithops with IBM COS and Gen2 backend. It also supports
 1. implement [__config_builder.py__](src/lithopscloud/modules/config_builder.py) interface to hold common logic
 2. add your implementation to __modules__ package
 3. extend your common implementation under each provider package, e.g. [lithops image.py](src/lithopscloud/modules/lithops/image.py) and [ray image.py](src/lithopscloud/modules/ray/image.py) to have config file specific logic
-

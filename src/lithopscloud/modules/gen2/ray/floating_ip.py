@@ -1,9 +1,9 @@
-from lithopscloud.modules.endpoint import EndpointConfig
+from lithopscloud.modules.config_builder import ConfigBuilder
 from typing import Any, Dict
 
 from lithopscloud.modules.utils import get_option_from_list
 
-class FloatingIpConfig(EndpointConfig):
+class FloatingIpConfig(ConfigBuilder):
     
     def run(self) -> Dict[str, Any]:
         head_ip = None

@@ -1,4 +1,4 @@
-from lithopscloud.modules.image import ImageConfig
+from lithopscloud.modules.gen2.image import ImageConfig
 
 class RayImageConfig(ImageConfig):
     

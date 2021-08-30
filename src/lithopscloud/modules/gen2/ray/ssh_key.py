@@ -1,4 +1,4 @@
-from lithopscloud.modules.ssh_key import SshKeyConfig
+from lithopscloud.modules.gen2.ssh_key import SshKeyConfig
 
 class RaySshKeyConfig(SshKeyConfig):
 
