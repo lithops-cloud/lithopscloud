@@ -1,3 +1,5 @@
 from lithopscloud.modules.api_key import ApiKeyConfig
+from lithopscloud.modules.code_engine.runtime import CERuntimeConfig
 
-MODULES = [ApiKeyConfig]
+CACHE = {}
+MODULES = [ApiKeyConfig,CERuntimeConfig]
