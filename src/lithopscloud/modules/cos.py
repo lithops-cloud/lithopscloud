@@ -22,7 +22,6 @@ class CosConfig(ConfigBuilder):
                                     ibm_auth_endpoint="https://iam.ng.bluemix.net/oidc/token",
                                     config=Config(signature_version='oauth'),
                                     endpoint_url=f'https://s3.{region}.cloud-object-storage.appdomain.cloud')
-
         def _get_all_service_instances():
             res = self.resource_controller_service.list_resource_instances(
                 resource_group_id=self.base_config['ibm_vpc']['resource_group_id'], type='service_instance').get_result()
@@ -30,21 +29,19 @@ class CosConfig(ConfigBuilder):
 
             while res['next_url']:
                 start = res['next_url'].split('start=')[1]
-
                 res = self.resource_controller_service.list_resource_instances(
                 resource_group_id=self.base_config['ibm_vpc']['resource_group_id'], type='service_instance', start=start).get_result()
 
                 resource_instances.extend(res['resources'])
 
-            # print(f'res len {len(resource_instances)}')
             return resource_instances
+
+        # get all service resource instances
+        resource_instances = _get_all_service_instances()
 
         # TODO: list regions programmatically!!!
         # initiate using a randomly chosen region
         s3_client = _init_boto3_client(BUCKET_REGIONS[0])
-
-        # get all service resource instances
-        resource_instances = _get_all_service_instances()
 
         # TODO: use default from config (if present)
         selected_storage_name = get_option_from_list(
@@ -127,6 +124,7 @@ def get_cos_instances(resource_instances):
     for resource in resource_instances:
         if 'cloud-object-storage' in resource['id']:
             storage_instances.append(resource['name'])
+    
     return storage_instances
 
 
