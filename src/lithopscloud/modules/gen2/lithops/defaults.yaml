@@ -22,6 +22,11 @@ ibm_vpc:
   ssh_user: root
   delete_on_dismantle: True
 
+code_engine:
+  namespace  : ""
+  region     : ""
+  runtime: ""
+
 ibm_cos:
   region: ""
   storage_bucket: ""
