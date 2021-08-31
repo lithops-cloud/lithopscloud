@@ -4,6 +4,9 @@ from typing import Any, Dict
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_platform_services import ResourceControllerV2, ResourceManagerV2
 from ibm_vpc import VpcV1
+import threading
+import time
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -59,3 +62,40 @@ class ConfigBuilder:
     def update_config(self, *args) -> Dict[str, Any]:
         """Updates config dictionary that can be dumped to config file"""
         raise NotImplementedError
+
+class Spinner(threading.Thread):
+
+    def __init__(self, *args, **kwargs):
+        super(Spinner, self).__init__(*args, **kwargs)
+        self.sttop = False
+
+    def stop(self):
+        self.sttop = True
+
+    def stopped(self):
+        return self.sttop
+
+    def run(self):
+        while True:
+            if self.stopped():
+                sys.stdout.write('\b')
+                sys.stdout.flush()
+                return
+
+            for cursor in '\\|/-':
+                time.sleep(0.1)
+                sys.stdout.write('\r{}'.format(cursor))
+                sys.stdout.flush()
+
+def spinner(f):
+    def foo(*args, **kwargs):
+        s = Spinner()
+        s.daemon = True
+        s.start()
+        result = f(*args, **kwargs)
+
+        s.stop()
+        s.join()
+
+        return result
+    return foo

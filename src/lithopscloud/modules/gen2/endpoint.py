@@ -1,4 +1,4 @@
-from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator
+from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator, spinner
 from typing import Any, Dict
 from lithopscloud.modules.utils import get_option_from_list
 
@@ -10,8 +10,12 @@ class EndpointConfig(ConfigBuilder):
 
     @update_decorator
     def run(self) -> Dict[str, Any]:
-        # find region and endpoint
-        regions_objects = self.ibm_vpc_client.list_regions().get_result()['regions']
+
+        @spinner
+        def get_regions_objects():
+            return self.ibm_vpc_client.list_regions().get_result()['regions']
+
+        regions_objects = get_regions_objects()
         
         default = self.defaults.get('region')
         region_obj = get_option_from_list("Choose region", regions_objects, default = default)
