@@ -4,6 +4,7 @@ import re
 import inquirer
 from inquirer import errors
 
+CACHE = {}
 
 def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothing=None, validate=True, carousel=True):
     if(len(choices) == 0 and do_nothing == None):
@@ -109,6 +110,10 @@ def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None
     """prompt options to user and returns user choice.
       :param str instance_to_create: when initialized to true adds a 'create' option that allows the user
                             to create an instance rather than to opt for one of the options."""
+
+    if instance_to_create:
+        choices.append(f'Create a new {instance_to_create}')
+
     if len(choices) == 0:
         raise Exception(
             f"No options were found to satisfy the following request: {msg}")
@@ -117,9 +122,6 @@ def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None
         print(
             f"\033[92mA single option was found in response to the request: '{msg}'. \n{choices[0]} was automatically chosen\n\033[0m")
         return {'answer': choices[0]}
-
-    if instance_to_create:
-        choices.append(f'Create a new {instance_to_create}')
 
     questions = [
         inquirer.List('answer',

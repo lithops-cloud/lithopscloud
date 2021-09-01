@@ -1,0 +1,16 @@
+lithops:
+  backend: code_engine
+  storage: ibm_cos
+
+ibm:
+  iam_api_key: ""
+
+
+code_engine:
+  namespace  : ""
+  region     : ""
+  runtime: ibmfunctions/lithops-ce-embl-v385-1:242dev0
+
+ibm_cos:
+  region: ""
+  storage_bucket: ""

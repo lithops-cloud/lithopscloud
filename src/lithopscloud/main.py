@@ -4,7 +4,6 @@ import pkg_resources
 import os
 import click
 import yaml
-from lithopscloud.modules import api_key
 
 from lithopscloud.modules.utils import get_option_from_list
 
@@ -40,7 +39,7 @@ def select_backend(input_file, iam_api_key):
         default = RAY_GEN2
 
     def validate(answers, current):
-        if current == LITHOPS_CE or current == LITHOPS_CF:
+        if current == LITHOPS_CF:
             from inquirer.errors import ValidationError
             raise ValidationError(current, reason=f'{current} not supported yet by this project')
         return True

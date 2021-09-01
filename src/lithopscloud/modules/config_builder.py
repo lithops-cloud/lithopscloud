@@ -1,12 +1,12 @@
 import logging
 from typing import Any, Dict
-
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_platform_services import ResourceControllerV2, ResourceManagerV2
 from ibm_vpc import VpcV1
 import threading
 import time
 import sys
+from lithopscloud.modules.utils import CACHE, find_default, get_option_from_list
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,7 @@ def update_decorator(f):
         else:
             update_config(result)
         return args[0].base_config
+
     return foo
 
 
@@ -63,6 +64,46 @@ class ConfigBuilder:
         """Updates config dictionary that can be dumped to config file"""
         raise NotImplementedError
 
+    def get_resources(self, resource_type=None):
+        """
+        :param resource_type: str of the following possible values: ['service_instance',resource_instance]
+        :return: resources belonging to a specific resource group, filtered by provided resource_type
+        """
+
+        if 'resource_group_id' not in CACHE:
+            self.select_resource_group()
+
+        res = self.resource_controller_service.list_resource_instances(
+            resource_group_id=CACHE['resource_group_id'], type=resource_type).get_result()
+        resource_instances = res['resources']
+
+        while res['next_url']:
+            start = res['next_url'].split('start=')[1]
+            res = self.resource_controller_service.list_resource_instances(
+                resource_group_id=CACHE['resource_group_id'], type=resource_type,
+                start=start).get_result()
+
+            resource_instances.extend(res['resources'])
+
+        return resource_instances
+
+    def select_resource_group(self):
+        """returns resource group id of a resource group the user will be prompted to pick
+        initializes CACHE['resource_group_id']"""
+
+        res_group_objects = self.resource_service_client.list_resource_groups().get_result()[
+            'resources']
+
+        default = find_default(
+            self.defaults, res_group_objects, id='resource_group_id')
+        res_group_obj = get_option_from_list(
+            "Select resource group", res_group_objects, default=default)
+
+        CACHE['resource_group_id'] = res_group_obj['id']  # cache group resource id for later use in storage
+
+        return res_group_obj['id']
+
+
 class Spinner(threading.Thread):
 
     def __init__(self, *args, **kwargs):
@@ -87,6 +128,7 @@ class Spinner(threading.Thread):
                 sys.stdout.write('\r{}'.format(cursor))
                 sys.stdout.flush()
 
+
 def spinner(f):
     def foo(*args, **kwargs):
         s = Spinner()
@@ -98,4 +140,5 @@ def spinner(f):
         s.join()
 
         return result
+
     return foo
