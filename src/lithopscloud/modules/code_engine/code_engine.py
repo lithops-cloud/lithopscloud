@@ -9,6 +9,8 @@ from lithopscloud.modules.config_builder import ConfigBuilder
 from typing import Any, Dict
 from lithopscloud.modules.utils import get_option_from_list_alt
 
+import time
+
 CE_REGIONS = []
 
 
@@ -59,6 +61,8 @@ class CodeEngine(ConfigBuilder):
                                      })
 
         delegated_refresh_token = iam_response.json()['delegated_refresh_token']
+
+        time.sleep(10)
 
         kubeconfig_response = ce_client.get_kubeconfig(
             x_delegated_refresh_token=delegated_refresh_token,
@@ -112,7 +116,6 @@ class CodeEngine(ConfigBuilder):
         project_namespace = self.get_project_namespace(region, project_guid)
 
         return region, project_namespace
-
 
 def init_ce_region_list():
     """initializes a list of the available regions in which a user can create a bucket"""
