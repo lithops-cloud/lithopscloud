@@ -122,15 +122,13 @@ class VPCConfig(ConfigBuilder):
                 "Select resource group", res_group_objects, default=default)
             return res_group_obj['id']
 
-        def create_public_gateway(vpc_obj, zone_obj, resource_group):
-            vpc_name = vpc_obj['name']
+        def create_public_gateway(vpc_obj, zone_obj, resource_group, subnet_name):
             vpc_id = vpc_obj['id']
             
-            # create and attach public gateway
             gateway_prototype = {}
             gateway_prototype['vpc'] = {'id': vpc_id}
             gateway_prototype['zone'] = {'name': zone_obj['name']}
-            gateway_prototype['name'] = f"{vpc_name}-gw"
+            gateway_prototype['name'] = f"{subnet_name}-gw"
             gateway_prototype['resource_group'] = resource_group
             gateway_data = ibm_vpc_client.create_public_gateway(
                 **gateway_prototype).get_result()
@@ -174,9 +172,6 @@ class VPCConfig(ConfigBuilder):
 
                     print(f"\n\n\033[92mVPC {vpc_name} been created\033[0m")
 
-                    # create and attach public gateway
-                    gateway_id = create_public_gateway(vpc_obj, zone_obj, resource_group)
-
                     # create subnet
                     subnet_name = '{}-subnet'.format(vpc_name)
                     subnet_data = None
@@ -205,6 +200,9 @@ class VPCConfig(ConfigBuilder):
                     subnet_data = ibm_vpc_client.create_subnet(
                         subnet_prototype).result
                     subnet_id = subnet_data['id']
+
+                    # create public gateway
+                    gateway_id = create_public_gateway(vpc_obj, zone_obj, resource_group, subnet_name)
 
                     # Attach public gateway to the subnet
                     ibm_vpc_client.set_subnet_public_gateway(
@@ -263,7 +261,7 @@ class VPCConfig(ConfigBuilder):
                             answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
                             if answers['answer'] == 'yes':
-                                gw_id = create_public_gateway(vpc_obj, zone_obj, resource_group)
+                                gw_id = create_public_gateway(vpc_obj, zone_obj, resource_group, subnet['name'])
                             else:
                                 exit(1)
 
