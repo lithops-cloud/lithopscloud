@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 import inquirer
-from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator
+from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator, spinner
 from lithopscloud.modules.utils import (find_default, find_name_id,
                                         get_option_from_list,
                                         get_region_by_endpoint,
@@ -75,10 +75,13 @@ class VPCConfig(ConfigBuilder):
 
         answers = inquirer.prompt(q, raise_keyboard_interrupt=True)
         if answers['answer'] == 'yes':
-            vpc_obj = ibm_vpc_client.create_vpc(address_prefix_management='auto', classic_access=False,
+
+            @spinner
+            def _create():
+                return ibm_vpc_client.create_vpc(address_prefix_management='auto', classic_access=False,
                                                 name=answers['name'], resource_group=resource_group).get_result()
 
-            return vpc_obj
+            return _create()
         else:
             return None
 
@@ -89,12 +92,16 @@ class VPCConfig(ConfigBuilder):
 
         def select_zone(vpc_id):
             # find availability zone
-            zones_objects = ibm_vpc_client.list_region_zones(region).get_result()[
-                'zones']
+            @spinner
+            def get_zones_and_subnets():
+                zones_objects = ibm_vpc_client.list_region_zones(region).get_result()['zones']
+                all_subnet_objects = ibm_vpc_client.list_subnets().get_result()['subnets']
+                return zones_objects, all_subnet_objects
+
+            zones_objects, all_subnet_objects = get_zones_and_subnets()
+
             if vpc_id:
                 # filter out zones that given vpc has no subnets in
-                all_subnet_objects = ibm_vpc_client.list_subnets().get_result()[
-                    'subnets']
                 zones = [s_obj['zone']['name']
                          for s_obj in all_subnet_objects if s_obj['vpc']['id'] == vpc_id]
                 zones_objects = [
@@ -113,8 +120,12 @@ class VPCConfig(ConfigBuilder):
 
         def select_resource_group():
             # find resource group
-            res_group_objects = self.resource_service_client.list_resource_groups().get_result()[
-                'resources']
+
+            @spinner
+            def get_res_group_objects():
+                return self.resource_service_client.list_resource_groups().get_result()['resources']
+
+            res_group_objects = get_res_group_objects()
 
             default = find_default(
                 self.defaults, res_group_objects, id='resource_group_id')
@@ -142,7 +153,11 @@ class VPCConfig(ConfigBuilder):
         while True:
             CREATE_NEW = 'Create new VPC'
 
-            vpc_objects = ibm_vpc_client.list_vpcs().get_result()['vpcs']
+            @spinner
+            def list_vpcs():
+                return ibm_vpc_client.list_vpcs().get_result()['vpcs']
+
+            vpc_objects = list_vpcs()
             default = find_default(self.defaults, vpc_objects, id='vpc_id')
 
             vpc_name, vpc_id = find_name_id(
@@ -175,8 +190,6 @@ class VPCConfig(ConfigBuilder):
                     # create subnet
                     subnet_name = '{}-subnet'.format(vpc_name)
                     subnet_data = None
-
-                    subnets_info = ibm_vpc_client.list_subnets().result
 
                     # find cidr
                     ipv4_cidr_block = None
@@ -240,10 +253,15 @@ class VPCConfig(ConfigBuilder):
                 # validate chosen vpc has all required
                 # starting from validating each of its subnets has public gateway
 
-                vpc_obj = ibm_vpc_client.get_vpc(id=vpc_id).result
+                @spinner
+                def get_vpc_obj_and_subnets():
+                    vpc_obj = ibm_vpc_client.get_vpc(id=vpc_id).result
+                    all_subnet_objects = ibm_vpc_client.list_subnets().get_result()['subnets']
+                    return vpc_obj, all_subnet_objects
+
+                vpc_obj, all_subnet_objects = get_vpc_obj_and_subnets()
                 resource_group = {'id': vpc_obj['resource_group']['id']}
 
-                all_subnet_objects = ibm_vpc_client.list_subnets().get_result()['subnets']
                 subnet_objects = [s_obj for s_obj in all_subnet_objects if s_obj['zone']
                           ['name'] == zone_obj['name'] and s_obj['vpc']['id'] == vpc_obj['id']]
 

@@ -2,7 +2,7 @@ import os
 from typing import Any, Dict
 
 import inquirer
-from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator
+from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator, spinner
 from lithopscloud.modules.utils import (find_default, find_name_id,
                                         validate_exists, validate_not_empty)
 
@@ -79,7 +79,11 @@ class SshKeyConfig(ConfigBuilder):
 
     @update_decorator
     def run(self) -> Dict[str, Any]:
-        ssh_key_objects = self.ibm_vpc_client.list_keys().get_result()['keys']
+        @spinner
+        def get_ssh_key_objects():
+            return self.ibm_vpc_client.list_keys().get_result()['keys']
+
+        ssh_key_objects = get_ssh_key_objects()
 
         CREATE_NEW_SSH_KEY = "Register new SSH key in IBM VPC"
 
