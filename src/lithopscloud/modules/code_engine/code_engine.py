@@ -46,6 +46,7 @@ class CodeEngine(ConfigBuilder):
 
     def get_project_namespace(self, region, guid):
         """returns the the namespace of a previously chosen project (identified by its guid)"""
+        max_attempts = sleep_duration = 3
 
         ce_client = IbmCloudCodeEngineV1(authenticator=IAMAuthenticator(apikey=self.base_config['ibm']['iam_api_key']))
         ce_client.set_service_url(f'https://api.{region}.codeengine.cloud.ibm.com/api/v1')
@@ -62,12 +63,16 @@ class CodeEngine(ConfigBuilder):
 
         delegated_refresh_token = iam_response.json()['delegated_refresh_token']
 
-        time.sleep(10)
+        for attempts in range(max_attempts + 1):
+            try:
+                kubeconfig_response = ce_client.get_kubeconfig(x_delegated_refresh_token=delegated_refresh_token, id=guid)
+            except Exception:
+                if attempts == max_attempts:
+                    print("failed to retrieve project's details, terminating config tool.")
+                    sys.exit()
+                print("failed to retrieve project's details, trying again...")
+                time.sleep(sleep_duration)
 
-        kubeconfig_response = ce_client.get_kubeconfig(
-            x_delegated_refresh_token=delegated_refresh_token,
-            id=guid,
-        )
         kubeconfig_string = kubeconfig_response.get_result().content.decode("utf-8")
 
         dict_struct = yaml.safe_load(kubeconfig_string)
@@ -116,6 +121,7 @@ class CodeEngine(ConfigBuilder):
         project_namespace = self.get_project_namespace(region, project_guid)
 
         return region, project_namespace
+
 
 def init_ce_region_list():
     """initializes a list of the available regions in which a user can create a bucket"""

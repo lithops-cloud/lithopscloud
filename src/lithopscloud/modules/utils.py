@@ -1,5 +1,6 @@
 import os
 import re
+import time
 
 import inquirer
 from inquirer import errors
@@ -7,13 +8,13 @@ from inquirer import errors
 CACHE = {}
 
 def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothing=None, validate=True, carousel=True):
-    if(len(choices) == 0 and do_nothing == None):
+    if (len(choices) == 0 and do_nothing == None):
         error_msg = f"There no option for {msg}"
         print(error_msg)
         raise Exception(error_msg)
 
-    if(len(choices) == 1 and not do_nothing):
-        return(choices[0])
+    if (len(choices) == 1 and not do_nothing):
+        return (choices[0])
 
     choices_keys = [choice[choice_key] for choice in choices]
     if do_nothing:
@@ -40,12 +41,12 @@ def find_name_id(objects, msg, obj_id=None, obj_name=None, default=None, do_noth
     if obj_id:
         # just validating that obj exists
         obj_name = next((obj['name']
-                        for obj in objects if obj['id'] == obj_id), None)
+                         for obj in objects if obj['id'] == obj_id), None)
         if not obj_name:
             raise Exception(f'Object with specified id {obj_id} not found')
     if obj_name:
         obj_id = next((obj['id']
-                      for obj in objects if obj['name'] == obj_name), None)
+                       for obj in objects if obj['name'] == obj_name), None)
 
     if not obj_id and not obj_name:
         obj = get_option_from_list(
@@ -111,17 +112,17 @@ def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None
       :param str instance_to_create: when initialized to true adds a 'create' option that allows the user
                             to create an instance rather than to opt for one of the options."""
 
-    if instance_to_create:
-        choices.append(f'Create a new {instance_to_create}')
-
-    if len(choices) == 0:
-        raise Exception(
-            f"No options were found to satisfy the following request: {msg}")
-
     if len(choices) == 1:
         print(
             f"\033[92mA single option was found in response to the request: '{msg}'. \n{choices[0]} was automatically chosen\n\033[0m")
         return {'answer': choices[0]}
+
+    if instance_to_create:
+        choices.insert(0, f'Create a new {instance_to_create}')
+
+    if len(choices) == 0:
+        raise Exception(
+            f"No options were found to satisfy the following request: {msg}")
 
     questions = [
         inquirer.List('answer',
@@ -144,3 +145,25 @@ def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None
 
     return answers
 
+#ToDo add as decorator to code_engine's ce_client.get_kubeconfig
+def retry_on_except(func):
+    retries = 0  # constants will be replaced by arguments to decorator:
+    sleep_duration = 0
+    def decorated_func(*args, **kwargs):
+        name = func.__name__
+        e = None
+        for retry in range(retries):
+            try:
+                result = func(*args, **kwargs)
+                return result
+            except Exception as e:
+                msg = f"Error in {name}, {e}, retries left {retries - retry}"
+                print(msg)
+                print(e)
+
+                args[0]._init()
+                time.sleep(sleep_duration)
+
+        raise e
+
+    return decorated_func
