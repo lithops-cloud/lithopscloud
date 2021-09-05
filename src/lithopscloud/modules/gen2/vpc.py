@@ -122,6 +122,25 @@ class VPCConfig(ConfigBuilder):
                 "Select resource group", res_group_objects, default=default)
             return res_group_obj['id']
 
+        def create_public_gateway(vpc_obj, zone_obj, resource_group):
+            vpc_name = vpc_obj['name']
+            vpc_id = vpc_obj['id']
+            
+            # create and attach public gateway
+            gateway_prototype = {}
+            gateway_prototype['vpc'] = {'id': vpc_id}
+            gateway_prototype['zone'] = {'name': zone_obj['name']}
+            gateway_prototype['name'] = f"{vpc_name}-gw"
+            gateway_prototype['resource_group'] = resource_group
+            gateway_data = ibm_vpc_client.create_public_gateway(
+                **gateway_prototype).get_result()
+            gateway_id = gateway_data['id']
+
+            print(
+                f"\033[92mVPC public gateway {gateway_prototype['name']} been created\033[0m")
+
+            return gateway_id
+
         while True:
             CREATE_NEW = 'Create new VPC'
 
@@ -156,17 +175,7 @@ class VPCConfig(ConfigBuilder):
                     print(f"\n\n\033[92mVPC {vpc_name} been created\033[0m")
 
                     # create and attach public gateway
-                    gateway_prototype = {}
-                    gateway_prototype['vpc'] = {'id': vpc_id}
-                    gateway_prototype['zone'] = {'name': zone_obj['name']}
-                    gateway_prototype['name'] = f"{vpc_name}-gw"
-                    gateway_prototype['resource_group'] = resource_group
-                    gateway_data = ibm_vpc_client.create_public_gateway(
-                        **gateway_prototype).get_result()
-                    gateway_id = gateway_data['id']
-
-                    print(
-                        f"\033[92mVPC public gateway {gateway_prototype['name']} been created\033[0m")
+                    gateway_id = create_public_gateway(vpc_obj, zone_obj, resource_group)
 
                     # create subnet
                     subnet_name = '{}-subnet'.format(vpc_name)
@@ -230,7 +239,39 @@ class VPCConfig(ConfigBuilder):
                         f"\033[92mSecurity group {sg_name} been updated with required rules\033[0m\n")
 
             else:
-                break
+                # validate chosen vpc has all required
+                # starting from validating each of its subnets has public gateway
 
-        vpc_obj = ibm_vpc_client.get_vpc(id=vpc_id).result
+                vpc_obj = ibm_vpc_client.get_vpc(id=vpc_id).result
+
+                all_subnet_objects = ibm_vpc_client.list_subnets().get_result()['subnets']
+                subnet_objects = [s_obj for s_obj in all_subnet_objects if s_obj['zone']
+                          ['name'] == zone_obj['name'] and s_obj['vpc']['id'] == vpc_obj['id']]
+
+                gw_id = None
+                for subnet in subnet_objects:
+                    gw = subnet.get('public_gateway')        
+                    if not gw:
+                        if not gw_id:
+                            questions = [
+                                inquirer.List('answer',
+                                    message=f'Selected vpcs {vpc_obj["name"]} subnet {subnet["name"]} is missing required public gateway, create a new one?',
+                                    choices=['yes', 'no'], default='yes'
+                                ), ]
+
+                            answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
+
+                            if answers['answer'] == 'yes':
+                                resource_group = {'id': vpc_obj['resource_group']['id']}
+                                gw_id = create_public_gateway(vpc_obj, zone_obj, resource_group)
+                            else:
+                                exit(1)
+
+                        # attach gateway to subnet
+                        ibm_vpc_client.set_subnet_public_gateway(subnet['id'], {'id': gw_id})
+                    else:
+                        gw_id = gw['id']
+
+                break
+        
         return vpc_obj, zone_obj
