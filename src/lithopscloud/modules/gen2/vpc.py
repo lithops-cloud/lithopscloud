@@ -5,7 +5,7 @@ from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator
 from lithopscloud.modules.utils import (find_default, find_name_id,
                                         get_option_from_list,
                                         get_region_by_endpoint,
-                                        validate_not_empty)
+                                        validate_not_empty, CACHE)
 
 
 class VPCConfig(ConfigBuilder):
@@ -84,7 +84,7 @@ class VPCConfig(ConfigBuilder):
 
     def _select_vpc(self, node_config, region):
 
-        vpc_id, vpc_name, zone_obj, sg_id = None, None, None, None
+        vpc_id, vpc_name, zone_obj, sg_id, resource_group = None, None, None, None, None
         ibm_vpc_client = self.ibm_vpc_client
 
         def select_zone(vpc_id):
@@ -273,5 +273,7 @@ class VPCConfig(ConfigBuilder):
                         gw_id = gw['id']
 
                 break
+
+        CACHE['resource_group_id'] = resource_group['id']
         
         return vpc_obj, zone_obj
