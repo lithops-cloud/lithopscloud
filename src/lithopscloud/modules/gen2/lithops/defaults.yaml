@@ -9,6 +9,7 @@ standalone:
   backend: ibm_vpc
   exec_mode: create
   auto_dismantle: True
+  runtime: kpavel/lithops-cf-v385-1:2217b2
 
 ibm_vpc:
   endpoint: ""
