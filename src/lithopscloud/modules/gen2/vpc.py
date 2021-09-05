@@ -243,6 +243,7 @@ class VPCConfig(ConfigBuilder):
                 # starting from validating each of its subnets has public gateway
 
                 vpc_obj = ibm_vpc_client.get_vpc(id=vpc_id).result
+                resource_group = {'id': vpc_obj['resource_group']['id']}
 
                 all_subnet_objects = ibm_vpc_client.list_subnets().get_result()['subnets']
                 subnet_objects = [s_obj for s_obj in all_subnet_objects if s_obj['zone']
@@ -262,7 +263,6 @@ class VPCConfig(ConfigBuilder):
                             answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
                             if answers['answer'] == 'yes':
-                                resource_group = {'id': vpc_obj['resource_group']['id']}
                                 gw_id = create_public_gateway(vpc_obj, zone_obj, resource_group)
                             else:
                                 exit(1)
