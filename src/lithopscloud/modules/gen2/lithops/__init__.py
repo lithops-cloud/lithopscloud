@@ -6,6 +6,8 @@ from lithopscloud.modules.gen2.lithops.image import LithopsImageConfig
 from lithopscloud.modules.cos import CosConfig
 from lithopscloud.modules.gen2.lithops.runtime import RuntimeConfig
 from lithopscloud.modules.gen2.lithops.dismantle import DismantleConfig
+from lithopscloud.modules.gen2.lithops.profile import LithopsProfileConfig
 
 
-MODULES = [ApiKeyConfig, LithopsEndpointConfig, LithopsVPCConfig, LithopsSshKeyConfig, LithopsImageConfig, CosConfig, RuntimeConfig, DismantleConfig]
+
+MODULES = [ApiKeyConfig, LithopsEndpointConfig, LithopsVPCConfig, LithopsSshKeyConfig, LithopsImageConfig, CosConfig, RuntimeConfig, DismantleConfig, LithopsProfileConfig]
