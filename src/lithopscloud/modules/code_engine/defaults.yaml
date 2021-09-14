@@ -1,10 +1,9 @@
 lithops:
   backend: code_engine
-  storage: ibm_cos
+  storage: ""
 
 ibm:
   iam_api_key: ""
-
 
 code_engine:
   namespace  : ""

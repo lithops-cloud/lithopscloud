@@ -1,0 +1,18 @@
+lithops:
+  backend: ibm_cf
+  storage:
+
+ibm:
+    iam_api_key: ""
+
+
+
+ibm_cf:
+    endpoint     : ""
+    namespace    : ""
+    namespace_id : ""
+    api_key : ""
+
+ibm_cos:
+  region: ""
+  storage_bucket: ""

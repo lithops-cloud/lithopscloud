@@ -1,11 +1,14 @@
 import os
 import re
+import subprocess
+import sys
 import time
-
+from enum import Enum
 import inquirer
 from inquirer import errors
 
 CACHE = {}
+
 
 def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothing=None, validate=True, carousel=True):
     if (len(choices) == 0 and do_nothing == None):
@@ -107,63 +110,165 @@ def free_dialog(msg, default=None):
     return answer
 
 
-def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None, multiple_choice=False):
+def get_confirmation(msg, default=None):
+    questions = [
+        inquirer.Confirm('answer',
+                         message=msg,
+                         default=default,
+                         ), ]
+    answer = inquirer.prompt(questions)
+
+    return answer
+
+
+def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None, carousel=True):
     """prompt options to user and returns user choice.
       :param str instance_to_create: when initialized to true adds a 'create' option that allows the user
                             to create an instance rather than to opt for one of the options."""
 
-    if len(choices) == 1:
-        print(
-            f"\033[92mA single option was found in response to the request: '{msg}'. \n{choices[0]} was automatically chosen\n\033[0m")
-        return {'answer': choices[0]}
-
     if instance_to_create:
-        choices.insert(0, f'Create a new {instance_to_create}')
+        choices.insert(0, color_msg(f'Create a new {instance_to_create}',color=Color.LIGHTCYAN))
 
     if len(choices) == 0:
         raise Exception(
             f"No options were found to satisfy the following request: {msg}")
+
+    if len(choices) == 1:
+        if instance_to_create:
+            print(color_msg(f"\nNo existing instances were found in relation to the request: "
+                            f"'{msg}'. Create a new one to proceed. ", color=Color.RED))
+        else:
+            print(color_msg(f"single option was found in response to the request: '{msg}'."
+                            f" \n{choices[0]} was automatically chosen\n",color=Color.ORANGE))
+            return {'answer': choices[0]}
 
     questions = [
         inquirer.List('answer',
                       message=msg,
                       choices=choices,
                       default=default,
-                      )] if not multiple_choice else \
-        [inquirer.Checkbox('answer',
-                           message=msg,
-                           choices=choices,
-                           default=default,
-                           )]
+                      carousel=carousel
+                      )]
 
     answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
-    while not answers['answer'] and multiple_choice:
-        print("You must choose at least one option.\n"
-              "To pick an option please use the right arrow key '->' to select and the left arrow key '<-' to cancel.")
-        answers = inquirer.prompt(questions)
-
     return answers
 
-#ToDo add as decorator to code_engine's ce_client.get_kubeconfig
-def retry_on_except(func):
-    retries = 0  # constants will be replaced by arguments to decorator:
-    sleep_duration = 0
-    def decorated_func(*args, **kwargs):
-        name = func.__name__
-        e = None
-        for retry in range(retries):
-            try:
-                result = func(*args, **kwargs)
-                return result
-            except Exception as e:
-                msg = f"Error in {name}, {e}, retries left {retries - retry}"
-                print(msg)
-                print(e)
 
-                args[0]._init()
-                time.sleep(sleep_duration)
+def retry_on_except(retries, sleep_duration):
+    """A decorator that calls the decorated function up to a number of times equals to 'retires' with a given
+      'sleep_duration' in between"""
 
-        raise e
+    def retry_on_except_warpper(func):
+        def func_wrapper(*args, **kwargs):
+            function_name = func.__name__
 
-    return decorated_func
+            for retry in range(retries):
+                try:
+                    result = func(*args, **kwargs)
+                    return result
+                except Exception as e:
+                    msg = f"Error in {function_name}, {e}, retries left {retries - retry - 1}"
+                    print(color_msg(msg,color=Color.RED))
+
+                    if retry < retries - 1:  # avoid sleeping after last failure
+                        time.sleep(sleep_duration)
+            print(color_msg(f"\nConfig tool was terminated, "
+                            f"as it can't progress without the successful activation of {function_name}",
+                            color=Color.RED))
+            sys.exit()
+
+        return func_wrapper
+
+    return retry_on_except_warpper
+
+
+def test_config_file(config_file_path):
+    """testing the created config file with a simple test  """
+
+    cmd = f"lithops test -c {config_file_path}"
+
+    virtual_env = get_confirmation("Is your lithops installed within a virtual environment?")['answer']
+    if virtual_env:  # activate the virtual environment before launching a lithops' test
+        path_exists = False
+        while not path_exists:
+            virtual_path = input("Please provide an absolute path to the bin folder "
+                                 "in your lithops virtual environment:")
+            if virtual_path[0] != '/':
+                virtual_path = '/' + virtual_path
+            if virtual_path[-1] == '/':
+                virtual_path = virtual_path[:-1]
+
+            if os.path.isdir(virtual_path):
+                path_exists = True
+            else:
+                print("\n\033[31mError - Path given doesn't point to a directory.\033[0m")
+
+        cmd = f"source {virtual_path}'/activate'; " + cmd
+
+    # small buffer size forces the process not to buffer the output.
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, bufsize=1, shell=True)
+    for line in iter(process.stdout.readline, b''):
+        print(line.decode())
+    process.stdout.close()
+    process.wait()
+
+
+def color_msg(msg, color=None, style=None, background=None):
+    """reformat a given string and returns it, matching the desired color,style and background in Ansi color code.
+        parameters are Enums of the classes: Color, Style and Background."""
+
+    init = '\033['
+    end = '\033[m'
+    font = ''
+
+    if color:
+        font += color.value
+
+    if style:
+        font = font + ';' if font else font
+        font += style.value
+
+    if background:
+        font = font + ';' if font else font
+        font += background.value
+
+    return init + font + 'm' + msg + end
+
+
+class Color(Enum):
+    BLACK = '30'
+    RED = '31'
+    GREEN = '32'
+    BROWN = '33'
+    BLUE = '34'
+    PURPLE = '35'
+    CYAN = '36'
+    LIGHTGREY = '37'
+    DARKGREY = '90'
+    LIGHTRED = '91'
+    LIGHTGREEN = '92'
+    YELLOW = '93'
+    LIGHTBLUE = '94'
+    PINK = '95'
+    LIGHTCYAN = '96'
+
+
+class Style(Enum):
+    RESET = '0'
+    BOLD = '01'
+    DISABLE = '02'
+    UNDERLINE = '04'
+    REVERSE = '07'
+    STRIKETHROUGH = '09'
+
+
+class Background(Enum):
+    BLACK = '40'
+    RED = '41'
+    GREEN = '42'
+    ORANGE = '43'
+    BLUE = '44'
+    PURPLE = '45'
+    CYAN = '46'
+    LIGHTGREY = '47'
