@@ -6,7 +6,7 @@ import click
 import yaml
 
 from lithopscloud.modules.utils import get_option_from_list, get_confirmation, test_config_file, color_msg, Color, \
-    verify_path
+     verify_paths
 
 LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops Gen2', 'Lithops Cloud Functions', \
                                                              'Lithops Code Engine', 'Ray Gen2', 'Local Host'
@@ -85,10 +85,9 @@ def builder(iam_api_key, output_file, input_file, version, verify_config):
         test_config_file(verify_config)
         exit(0)
 
-    input_file = verify_path(input_file, verify_input_file=True)
-    output_file = verify_path(output_file, verify_input_file=False)
-
     print(color_msg("\nWelcome to lithops cloud config export helper\n", color=Color.YELLOW))
+    input_file, output_file = verify_paths(input_file, output_file)
+
     base_config, modules = select_backend(input_file, iam_api_key)
 
     for module in modules:

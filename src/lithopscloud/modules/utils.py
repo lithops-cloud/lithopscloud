@@ -197,17 +197,17 @@ def test_config_file(config_file_path):
     process.wait()
 
 
-def verify_path(path, verify_input_file: 'bool'):
+def verify_paths(input_path, output_path):
     """:returns a valid path file to an existing input file if verify_input_file is true,
         else returns a valid output path for the resulting config file"""
 
-    def _is_valid_input_path():
+    def _is_valid_input_path(path):
         if not os.path.isfile(path):
             print(color_msg(f"\nError - Path: '{path}' doesn't point to a file. ", color=Color.RED))
             return False
         return True
 
-    def _is_valid_output_path():
+    def _is_valid_output_path(path):
         prefix_directory = path.rsplit('/', 1)[0]
         if os.path.isdir(prefix_directory):
             return path
@@ -215,26 +215,24 @@ def verify_path(path, verify_input_file: 'bool'):
             print(color_msg(f"{prefix_directory} doesn't lead to an existing directory", color=Color.RED))
             return False
 
-    if verify_input_file:
-        default_config_file = ''
-        verify_func = _is_valid_input_path
-        request = "Provide a path to your existing config file, or leave blank to configure from template"
-        default_msg = '\nDefault input file was chosen\n'
-    else:
-        default_config_file = tempfile.mkstemp(suffix='.yaml')[1]
-        verify_func = _is_valid_output_path
-        request = "Provide a custom path for your config file, or leave blank for default output location"
-        default_msg = '\nDefault output path was chosen\n'
+    def _prompt_user(path, default_config_file, verify_func, request, default_msg):
+        while True:
+            if not path:
+                print(color_msg(default_msg, color=Color.LIGHTGREEN))
+                return default_config_file
 
-    while True:
-        if not path:
-            print(color_msg(default_msg, color=Color.LIGHTGREEN))
-            return default_config_file
+            if verify_func(path):
+                return path
+            else:
+                path = free_dialog(request)['answer']
 
-        if verify_func():
-            return path
-        else:
-            path = free_dialog(request)['answer']
+    input_path = _prompt_user(input_path, '', _is_valid_input_path,
+                              "Provide a path to your existing config file, or leave blank to configure from template",
+                              'Default input file was chosen\n')
+    output_path = _prompt_user(output_path, tempfile.mkstemp(suffix='.yaml')[1], _is_valid_output_path,
+                               "Provide a custom path for your config file, or leave blank for default output location",
+                               'Default output path was chosen\n')
+    return input_path,output_path
 
 
 def color_msg(msg, color=None, style=None, background=None):
