@@ -5,9 +5,8 @@ import requests
 from ibm_botocore.client import Config
 from ibm_botocore.exceptions import ClientError
 from lithopscloud.modules.config_builder import ConfigBuilder
-from lithopscloud.modules.utils import free_dialog, CACHE, color_msg, Color
-from lithopscloud.modules.utils import \
-    get_option_from_list_alt as get_option_from_list
+from lithopscloud.modules.utils import free_dialog, CACHE, color_msg, Color, NEW_INSTANCE
+from lithopscloud.modules.utils import get_option_from_list_alt as get_option_from_list
 
 BUCKET_REGIONS = []
 
@@ -34,7 +33,7 @@ class CosConfig(ConfigBuilder):
                                                      get_cos_instances(resource_instances),
                                                      instance_to_create='COS instance')['answer']
 
-        if selected_storage_name == 'Create a new COS instance':
+        if NEW_INSTANCE in selected_storage_name:
             ibm_service_instance_id = self.create_cos_instance()
 
         else:
@@ -43,8 +42,9 @@ class CosConfig(ConfigBuilder):
         client_response = s3_client.list_buckets(IBMServiceInstanceId=ibm_service_instance_id)
         # prompt user to choose a bucket from buckets available within chosen cos instance
         bucket_names = [bucket["Name"] for bucket in client_response['Buckets']]
+        default_bucket = self.base_config['ibm_cos']['storage_bucket'] if self.base_config.get('ibm_cos') else None
         chosen_bucket = get_option_from_list('Please choose a bucket', bucket_names, 'bucket',
-                                             default=self.base_config['ibm_cos']['storage_bucket'])['answer']
+                                             default=default_bucket)['answer']
 
         if 'Create' not in chosen_bucket:
             print('Searching for bucket in all available regions...')
@@ -71,18 +71,17 @@ class CosConfig(ConfigBuilder):
 
         else:  # user would like to create a new bucket
             bucket_location = \
-                get_option_from_list('Please choose a region you would like your bucket to be located in :',
+                get_option_from_list('Please choose a region you would like your bucket to be located in',
                                      BUCKET_REGIONS)['answer']
             # changing location of the client to create a bucket in requested region.
             s3_client = _init_boto3_client(bucket_location)
 
             chosen_bucket = create_bucket(s3_client, ibm_service_instance_id)
 
-        self.base_config['ibm_cos'] = {
-            'storage_bucket': chosen_bucket, 'region': bucket_location}
+        self.base_config['ibm_cos'] = {'storage_bucket': chosen_bucket, 'region': bucket_location}
         self.base_config['lithops']['storage'] = 'ibm_cos'
-        print(color_msg("\nIBM Cloud Object Storage was configured successfully", color=Color.LIGHTGREEN))
 
+        print(color_msg("\nIBM Cloud Object Storage was configured successfully", color=Color.LIGHTGREEN))
         return self.base_config
 
     def create_cos_instance(self):

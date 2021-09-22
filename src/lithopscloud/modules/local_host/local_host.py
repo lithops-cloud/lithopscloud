@@ -1,6 +1,5 @@
 from typing import Dict, Any
 
-from lithopscloud import color_msg
 from lithopscloud.modules.config_builder import ConfigBuilder
 
 

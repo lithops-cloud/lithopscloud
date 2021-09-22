@@ -5,9 +5,10 @@ import os
 import click
 import yaml
 
-from lithopscloud.modules.utils import get_option_from_list, get_confirmation, test_config_file, color_msg, Color
+from lithopscloud.modules.utils import get_option_from_list, get_confirmation, test_config_file, color_msg, Color, \
+    verify_path
 
-LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops Gen2', 'Lithops Cloud Functions',\
+LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops Gen2', 'Lithops Cloud Functions', \
                                                              'Lithops Code Engine', 'Ray Gen2', 'Local Host'
 
 
@@ -73,11 +74,19 @@ def select_backend(input_file, iam_api_key):
 @click.option('--input-file', '-i', help=f'Template for the new configuration')
 @click.option('--iam-api-key', help='IAM_API_KEY')
 @click.option('--version', '-v', help=f'Get package version', is_flag=True)
-def builder(iam_api_key, output_file, input_file, version):
+@click.option('--verify_config', help='verify config via testing')
+def builder(iam_api_key, output_file, input_file, version, verify_config):
     if version:
-        print(
-            f"{pkg_resources.get_distribution('lithopscloud').project_name} {pkg_resources.get_distribution('lithopscloud').version}")
+        print(f"{pkg_resources.get_distribution('lithopscloud').project_name} "
+              f"{pkg_resources.get_distribution('lithopscloud').version}")
         exit(0)
+
+    if verify_config:
+        test_config_file(verify_config)
+        exit(0)
+
+    input_file = verify_path(input_file, verify_input_file=True)
+    output_file = verify_path(output_file, verify_input_file=False)
 
     print(color_msg("\nWelcome to lithops cloud config export helper\n", color=Color.YELLOW))
     base_config, modules = select_backend(input_file, iam_api_key)
@@ -86,20 +95,16 @@ def builder(iam_api_key, output_file, input_file, version):
         next_module = module(base_config)
         base_config = next_module.run()
 
-    if not output_file:
-        output_file = tempfile.mkstemp(suffix='.yaml')[1]
-
     with open(output_file, 'w') as outfile:
         yaml.dump(base_config, outfile, default_flow_style=False)
 
     print("\n\n=================================================")
-    print(f"\033[92mCluster config file: {output_file}\033[0m")
+    print(color_msg(f"Cluster config file: {output_file}", color=Color.LIGHTGREEN))
     print("=================================================")
 
-    verify_config_file = get_confirmation("Would you like to verify that your lithops configuration file "
-                                          "is configured correctly?")['answer']
-    if verify_config_file:
-        test_config_file(output_file)
+    if {'ibm_vpc', 'provider'}.intersection(base_config.keys()):
+        print(color_msg("*Warning* it will take a considerable amount of time to initialize the virtual machine",
+                        color=Color.RED))
 
 
 if __name__ == '__main__':

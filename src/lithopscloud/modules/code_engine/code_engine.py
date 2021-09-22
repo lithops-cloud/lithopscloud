@@ -3,7 +3,7 @@ import requests
 import yaml
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_code_engine_sdk.ibm_cloud_code_engine_v1 import IbmCloudCodeEngineV1
-from lithopscloud.modules.utils import CACHE, free_dialog, retry_on_except, color_msg, Color
+from lithopscloud.modules.utils import CACHE, free_dialog, retry_on_except, color_msg, Color, NEW_INSTANCE
 from lithopscloud.modules.config_builder import ConfigBuilder, spinner
 from typing import Any, Dict
 from lithopscloud.modules.utils import get_option_from_list_alt
@@ -23,10 +23,10 @@ class CodeEngine(ConfigBuilder):
         init_ce_region_list()
 
         ce_instances = self.get_ce_instances()
-        chosen_project = get_option_from_list_alt('Please pick one of your Code Engine projects :',
+        chosen_project = get_option_from_list_alt('Please pick one of your Code Engine projects',
                                                   list(ce_instances.keys()), instance_to_create='project')['answer']
 
-        if chosen_project == 'Create a new project':
+        if NEW_INSTANCE in chosen_project:
             region, project_namespace = self.create_new_project()
         else:
             project_guid = ce_instances[chosen_project]['guid']
@@ -118,8 +118,14 @@ class CodeEngine(ConfigBuilder):
 
 
 def init_ce_region_list():
-    """initializes a list of the available regions in which a user can create a bucket"""
-    response = requests.get(
-        'https://globalcatalog.cloud.ibm.com/api/v1/814fb158-af9c-4d3c-a06b-c7da42392845/%2A').json()
+    """initializes a list of the available regions in which a user can create a code engine project"""
+    global CE_REGIONS
+    try:
+        response = requests.get(
+            'https://globalcatalog.cloud.ibm.com/api/v1/814fb158-af9c-4d3c-a06b-c7da42392845/%2A').json()
+    except:
+        CE_REGIONS = ['us-south', 'ca-tor', 'eu-de', 'eu-gb', 'jp-osa', 'jp-tok']
+        return
+
     for resource in response['resources']:
         CE_REGIONS.append(resource['geo_tags'][0])

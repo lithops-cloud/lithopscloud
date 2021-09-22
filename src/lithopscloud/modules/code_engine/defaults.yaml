@@ -8,8 +8,6 @@ ibm:
 code_engine:
   namespace  : ""
   region     : ""
-  runtime: ibmfunctions/lithops-ce-embl-v385-1:242dev0
+  runtime: ""
 
-ibm_cos:
-  region: ""
-  storage_bucket: ""
+

@@ -2,12 +2,14 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from enum import Enum
 import inquirer
 from inquirer import errors
 
 CACHE = {}
+NEW_INSTANCE = 'Create a new'  # guaranteed substring in every 'create new instance' option prompted to user.
 
 
 def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothing=None, validate=True, carousel=True):
@@ -101,11 +103,12 @@ def find_default(template_dict, objects, name=None, id=None):
                     return obj['name']
 
 
-def free_dialog(msg, default=None):
+def free_dialog(msg, default=None, validate=True):
     question = [
         inquirer.Text('answer',
                       message=msg,
-                      default=default)]
+                      default=default,
+                      validate=validate)]
     answer = inquirer.prompt(question, raise_keyboard_interrupt=True)
     return answer
 
@@ -116,7 +119,7 @@ def get_confirmation(msg, default=None):
                          message=msg,
                          default=default,
                          ), ]
-    answer = inquirer.prompt(questions)
+    answer = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
     return answer
 
@@ -127,7 +130,7 @@ def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None
                             to create an instance rather than to opt for one of the options."""
 
     if instance_to_create:
-        choices.insert(0, color_msg(f'Create a new {instance_to_create}',color=Color.LIGHTCYAN))
+        choices.insert(0, color_msg(f'Create a new {instance_to_create}', style=Style.ITALIC))
 
     if len(choices) == 0:
         raise Exception(
@@ -139,7 +142,7 @@ def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None
                             f"'{msg}'. Create a new one to proceed. ", color=Color.RED))
         else:
             print(color_msg(f"single option was found in response to the request: '{msg}'."
-                            f" \n{choices[0]} was automatically chosen\n",color=Color.ORANGE))
+                            f" \n{choices[0]} was automatically chosen\n", color=Color.ORANGE))
             return {'answer': choices[0]}
 
     questions = [
@@ -169,7 +172,7 @@ def retry_on_except(retries, sleep_duration):
                     return result
                 except Exception as e:
                     msg = f"Error in {function_name}, {e}, retries left {retries - retry - 1}"
-                    print(color_msg(msg,color=Color.RED))
+                    print(color_msg(msg, color=Color.RED))
 
                     if retry < retries - 1:  # avoid sleeping after last failure
                         time.sleep(sleep_duration)
@@ -186,32 +189,52 @@ def retry_on_except(retries, sleep_duration):
 def test_config_file(config_file_path):
     """testing the created config file with a simple test  """
 
-    cmd = f"lithops test -c {config_file_path}"
-
-    virtual_env = get_confirmation("Is your lithops installed within a virtual environment?")['answer']
-    if virtual_env:  # activate the virtual environment before launching a lithops' test
-        path_exists = False
-        while not path_exists:
-            virtual_path = input("Please provide an absolute path to the bin folder "
-                                 "in your lithops virtual environment:")
-            if virtual_path[0] != '/':
-                virtual_path = '/' + virtual_path
-            if virtual_path[-1] == '/':
-                virtual_path = virtual_path[:-1]
-
-            if os.path.isdir(virtual_path):
-                path_exists = True
-            else:
-                print("\n\033[31mError - Path given doesn't point to a directory.\033[0m")
-
-        cmd = f"source {virtual_path}'/activate'; " + cmd
-
-    # small buffer size forces the process not to buffer the output.
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, bufsize=1, shell=True)
+    # small buffer size forces the process not to buffer the output, thus printing it instantly.
+    process = subprocess.Popen(f"lithops test -c {config_file_path}", stdout=subprocess.PIPE, bufsize=1, shell=True)
     for line in iter(process.stdout.readline, b''):
         print(line.decode())
     process.stdout.close()
     process.wait()
+
+
+def verify_path(path, verify_input_file: 'bool'):
+    """:returns a valid path file to an existing input file if verify_input_file is true,
+        else returns a valid output path for the resulting config file"""
+
+    def _is_valid_input_path():
+        if not os.path.isfile(path):
+            print(color_msg(f"\nError - Path: '{path}' doesn't point to a file. ", color=Color.RED))
+            return False
+        return True
+
+    def _is_valid_output_path():
+        prefix_directory = path.rsplit('/', 1)[0]
+        if os.path.isdir(prefix_directory):
+            return path
+        else:
+            print(color_msg(f"{prefix_directory} doesn't lead to an existing directory", color=Color.RED))
+            return False
+
+    if verify_input_file:
+        default_config_file = ''
+        verify_func = _is_valid_input_path
+        request = "Provide a path to your existing config file, or leave blank to configure from template"
+        default_msg = '\nDefault input file was chosen\n'
+    else:
+        default_config_file = tempfile.mkstemp(suffix='.yaml')[1]
+        verify_func = _is_valid_output_path
+        request = "Provide a custom path for your config file, or leave blank for default output location"
+        default_msg = '\nDefault output path was chosen\n'
+
+    while True:
+        if not path:
+            print(color_msg(default_msg, color=Color.LIGHTGREEN))
+            return default_config_file
+
+        if verify_func():
+            return path
+        else:
+            path = free_dialog(request)['answer']
 
 
 def color_msg(msg, color=None, style=None, background=None):
@@ -258,6 +281,7 @@ class Style(Enum):
     RESET = '0'
     BOLD = '01'
     DISABLE = '02'
+    ITALIC = '03'
     UNDERLINE = '04'
     REVERSE = '07'
     STRIKETHROUGH = '09'
