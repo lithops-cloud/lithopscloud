@@ -1,4 +1,4 @@
-from lithopscloud.modules.gen2.image import ProfileConfig
+from lithopscloud.modules.gen2.profile import ProfileConfig
 
 class RayProfileConfig(ProfileConfig):
     
