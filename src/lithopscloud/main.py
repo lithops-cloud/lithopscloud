@@ -1,12 +1,10 @@
 import importlib
-import tempfile
 import pkg_resources
 import os
 import click
 import yaml
 
-from lithopscloud.modules.utils import get_option_from_list, get_confirmation, test_config_file, color_msg, Color, \
-     verify_paths
+from lithopscloud.modules.utils import get_option_from_list, test_config_file, color_msg, Color, verify_paths
 
 LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops Gen2', 'Lithops Cloud Functions', \
                                                              'Lithops Code Engine', 'Ray Gen2', 'Local Host'
