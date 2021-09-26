@@ -99,10 +99,6 @@ def builder(iam_api_key, output_file, input_file, version, verify_config):
     print(color_msg(f"Cluster config file: {output_file}", color=Color.LIGHTGREEN))
     print("=================================================")
 
-    if {'ibm_vpc', 'provider'}.intersection(base_config.keys()):
-        print(color_msg("*Warning* it will take a considerable amount of time to initialize the virtual machine",
-                        color=Color.RED))
-
 
 if __name__ == '__main__':
     try:

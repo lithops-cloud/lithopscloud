@@ -7,6 +7,7 @@ import tempfile
 import time
 from enum import Enum
 import inquirer
+import yaml
 from inquirer import errors
 
 CACHE = {}
@@ -180,7 +181,7 @@ def retry_on_except(retries, sleep_duration):
             print(color_msg(f"\nConfig tool was terminated, "
                             f"as it can't progress without the successful activation of {function_name}",
                             color=Color.RED))
-            sys.exit()
+            sys.exit(0)
 
         return func_wrapper
 
@@ -189,15 +190,26 @@ def retry_on_except(retries, sleep_duration):
 
 def test_config_file(config_file_path):
     """testing the created config file with a simple test  """
+    confirm_test_run = True
     lithops_installed = importlib.util.find_spec("lithops")
     if not lithops_installed:
-        print(color_msg("Lithops must be installed to ",color=Color.RED))
-    # small buffer size forces the process not to buffer the output, thus printing it instantly.
-    process = subprocess.Popen(f"lithops test -c {config_file_path}", stdout=subprocess.PIPE, bufsize=1, shell=True)
-    for line in iter(process.stdout.readline, b''):
-        print(line.decode())
-    process.stdout.close()
-    process.wait()
+        print(color_msg("Lithops must be installed to ", color=Color.RED))
+
+    with open(config_file_path) as config_file:
+        base_config = yaml.safe_load(config_file)
+
+    if {'ibm_vpc', 'provider'}.intersection(base_config.keys()):
+        confirm_test_run = get_confirmation(
+            color_msg("*Warning* it will take a considerable amount of time to initialize the virtual machine. "
+                      "Continue?", color=Color.RED))
+
+    if confirm_test_run:
+        # small buffer size forces the process not to buffer the output, thus printing it instantly.
+        process = subprocess.Popen(f"lithops test -c {config_file_path}", stdout=subprocess.PIPE, bufsize=1, shell=True)
+        for line in iter(process.stdout.readline, b''):
+            print(line.decode())
+        process.stdout.close()
+        process.wait()
 
 
 def verify_paths(input_path, output_path):
@@ -235,7 +247,7 @@ def verify_paths(input_path, output_path):
     output_path = _prompt_user(output_path, tempfile.mkstemp(suffix='.yaml')[1], _is_valid_output_path,
                                "Provide a custom path for your config file, or leave blank for default output location",
                                'Default output path was chosen\n')
-    return input_path,output_path
+    return input_path, output_path
 
 
 def color_msg(msg, color=None, style=None, background=None):

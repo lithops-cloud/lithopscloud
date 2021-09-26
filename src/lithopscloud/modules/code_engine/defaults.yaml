@@ -8,6 +8,6 @@ ibm:
 code_engine:
   namespace  : ""
   region     : ""
-  runtime: ""
+  runtime: cohenjomer/lithops-ce:250dev0
 
 

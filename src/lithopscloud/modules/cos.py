@@ -5,7 +5,7 @@ import requests
 from ibm_botocore.client import Config
 from ibm_botocore.exceptions import ClientError
 from lithopscloud.modules.config_builder import ConfigBuilder
-from lithopscloud.modules.utils import free_dialog, CACHE, color_msg, Color, NEW_INSTANCE
+from lithopscloud.modules.utils import free_dialog, CACHE, color_msg, Color, NEW_INSTANCE, retry_on_except
 from lithopscloud.modules.utils import get_option_from_list_alt as get_option_from_list
 
 BUCKET_REGIONS = []
@@ -106,7 +106,7 @@ class CosConfig(ConfigBuilder):
                 cos_instance_created = True
 
             except Exception as e:
-                print(f"Couldn't create new cloud object storage instance.\n{e} ")
+                print(color_msg(f"Couldn't create new cloud object storage instance.\n{e} ",color=Color.RED))
 
         print(f'A new COS instance named {cos_name} was created')
         return response['id']
@@ -124,7 +124,7 @@ def create_bucket(s3_client, ibm_service_instance_id):
                 Bucket=f'{chosen_bucket}', IBMServiceInstanceId=ibm_service_instance_id)
             bucket_created = True
         except TypeError:  # allow user to exit config tool using ctrl+c
-            print('Terminating config tool, as requested.')
+            print(color_msg('Terminating config tool, as requested.',color=Color.RED))
             sys.exit(0)
         except Exception as invalid_bucket_name:
             print(color_msg(f"Invalid Bucket Name: {invalid_bucket_name}", color=Color.RED) )
@@ -149,8 +149,10 @@ def get_service_instance_id(storage_name, resource_instances):
             return resource['id']
 
 
+@retry_on_except(retries=3, sleep_duration=7)
 def init_cos_region_list():
     """initializes a list of the available regions in which a user can create a bucket"""
     response = requests.get(f'https://control.cloud-object-storage.cloud.ibm.com/v2/endpoints').json()
     for region in response['service-endpoints']['regional']:
         BUCKET_REGIONS.append(region)
+

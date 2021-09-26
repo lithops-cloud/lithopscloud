@@ -8,7 +8,6 @@ from lithopscloud.modules.config_builder import ConfigBuilder, spinner
 from typing import Any, Dict
 from lithopscloud.modules.utils import get_option_from_list_alt
 
-
 CE_REGIONS = []
 
 
@@ -45,7 +44,7 @@ class CodeEngine(ConfigBuilder):
     def get_project_namespace(self, region, guid):
         """returns the the namespace of a previously chosen project (identified by its guid)"""
 
-        @retry_on_except(retries=3,sleep_duration=7)
+        @retry_on_except(retries=3, sleep_duration=7)
         def _get_kubeconfig_response():
             return ce_client.get_kubeconfig(x_delegated_refresh_token=delegated_refresh_token, id=guid)
 
@@ -108,8 +107,8 @@ class CodeEngine(ConfigBuilder):
                 resource_plan_id='814fb158-af9c-4d3c-a06b-c7da42392845'
             ).get_result()
         except Exception as e:
-            print(color_msg(f"Couldn't create new code engine project.\n{e} ",color=Color.RED))
-            sys.exit()  # used sys.exit instead of exception to cancel traceback that will hide the error message
+            print(color_msg(f"Couldn't create new code engine project.\n{e} ", color=Color.RED))
+            sys.exit(0)  # used sys.exit instead of exception to cancel traceback that will hide the error message
 
         project_guid = response['guid']
         project_namespace = self.get_project_namespace(region, project_guid)
@@ -117,15 +116,10 @@ class CodeEngine(ConfigBuilder):
         return region, project_namespace
 
 
+@retry_on_except(retries=3, sleep_duration=7)
 def init_ce_region_list():
     """initializes a list of the available regions in which a user can create a code engine project"""
-    global CE_REGIONS
-    try:
-        response = requests.get(
-            'https://globalcatalog.cloud.ibm.com/api/v1/814fb158-af9c-4d3c-a06b-c7da42392845/%2A').json()
-    except:
-        CE_REGIONS = ['us-south', 'ca-tor', 'eu-de', 'eu-gb', 'jp-osa', 'jp-tok']
-        return
-
+    response = requests.get(
+        'https://globalcatalog.cloud.ibm.com/api/v1/814fb158-af9c-4d3c-a06b-c7da42392845/%2A').json()
     for resource in response['resources']:
         CE_REGIONS.append(resource['geo_tags'][0])
