@@ -1,3 +1,4 @@
+import importlib
 import os
 import re
 import subprocess
@@ -188,7 +189,9 @@ def retry_on_except(retries, sleep_duration):
 
 def test_config_file(config_file_path):
     """testing the created config file with a simple test  """
-
+    lithops_installed = importlib.util.find_spec("lithops")
+    if not lithops_installed:
+        print(color_msg("Lithops must be installed to ",color=Color.RED))
     # small buffer size forces the process not to buffer the output, thus printing it instantly.
     process = subprocess.Popen(f"lithops test -c {config_file_path}", stdout=subprocess.PIPE, bufsize=1, shell=True)
     for line in iter(process.stdout.readline, b''):
@@ -198,8 +201,8 @@ def test_config_file(config_file_path):
 
 
 def verify_paths(input_path, output_path):
-    """:returns a valid path file to an existing input file if verify_input_file is true,
-        else returns a valid output path for the resulting config file"""
+    """:returns a valid input and output path files, in accordance with provided paths.
+        if a given path is invalid, and user is unable to rectify, a default path will be chosen in its stead. """
 
     def _is_valid_input_path(path):
         if not os.path.isfile(path):

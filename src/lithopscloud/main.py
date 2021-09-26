@@ -74,7 +74,7 @@ def select_backend(input_file, iam_api_key):
 @click.option('--input-file', '-i', help=f'Template for the new configuration')
 @click.option('--iam-api-key', help='IAM_API_KEY')
 @click.option('--version', '-v', help=f'Get package version', is_flag=True)
-@click.option('--verify_config', help='verify config via testing')
+@click.option('--verify_config', help="Path to a lithops config file you'd wish to verify via testing")
 def builder(iam_api_key, output_file, input_file, version, verify_config):
     if version:
         print(f"{pkg_resources.get_distribution('lithopscloud').project_name} "
