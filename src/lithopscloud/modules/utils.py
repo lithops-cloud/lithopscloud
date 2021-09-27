@@ -189,7 +189,7 @@ def retry_on_except(retries, sleep_duration):
 
 
 def test_config_file(config_file_path):
-    """testing the created config file with a simple test  """
+    """testing provided config file with a simple test  """
     confirm_test_run = True
     lithops_installed = importlib.util.find_spec("lithops")
     if not lithops_installed:
@@ -203,13 +203,22 @@ def test_config_file(config_file_path):
             color_msg("*Warning* it will take a considerable amount of time to initialize the virtual machine. "
                       "Continue?", color=Color.RED))
 
+    if 'code_engine' in base_config.keys():
+        run_cmd(f'lithops clean -c {config_file_path} ')
+
     if confirm_test_run:
-        # small buffer size forces the process not to buffer the output, thus printing it instantly.
-        process = subprocess.Popen(f"lithops test -c {config_file_path}", stdout=subprocess.PIPE, bufsize=1, shell=True)
-        for line in iter(process.stdout.readline, b''):
-            print(line.decode())
-        process.stdout.close()
-        process.wait()
+        run_cmd(f"lithops test -c {config_file_path}")
+
+
+def run_cmd(cmd):
+    """runs a command via cli while constantly printing the output from the read pipe"""
+
+    # small buffer size forces the process not to buffer the output, thus printing it instantly.
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, bufsize=1, shell=True)
+    for line in iter(process.stdout.readline, b''):
+        print(line.decode())
+    process.stdout.close()
+    process.wait()
 
 
 def verify_paths(input_path, output_path):

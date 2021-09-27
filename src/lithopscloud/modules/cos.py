@@ -108,7 +108,7 @@ class CosConfig(ConfigBuilder):
             except Exception as e:
                 print(color_msg(f"Couldn't create new cloud object storage instance.\n{e} ",color=Color.RED))
 
-        print(f'A new COS instance named {cos_name} was created')
+        print(color_msg(f"A new COS instance named '{cos_name}' was created",color=Color.LIGHTGREEN))
         return response['id']
 
 
