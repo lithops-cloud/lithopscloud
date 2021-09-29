@@ -74,19 +74,22 @@ class ConfigBuilder:
         if 'resource_group_id' not in CACHE:
             self.select_resource_group()
 
-        res = self.resource_controller_service.list_resource_instances(
-            resource_group_id=CACHE['resource_group_id'], type=resource_type).get_result()
-        resource_instances = res['resources']
-
-        while res['next_url']:
-            start = res['next_url'].split('start=')[1]
+        @spinner
+        def _get_resources():
             res = self.resource_controller_service.list_resource_instances(
-                resource_group_id=CACHE['resource_group_id'], type=resource_type,
-                start=start).get_result()
+                resource_group_id=CACHE['resource_group_id'], type=resource_type).get_result()
+            resource_instances = res['resources']
 
-            resource_instances.extend(res['resources'])
+            while res['next_url']:
+                start = res['next_url'].split('start=')[1]
+                res = self.resource_controller_service.list_resource_instances(
+                    resource_group_id=CACHE['resource_group_id'], type=resource_type,
+                    start=start).get_result()
 
-        return resource_instances
+                resource_instances.extend(res['resources'])
+            return resource_instances
+
+        return _get_resources()
 
     def select_resource_group(self):
         """returns resource group id of a resource group the user will be prompted to pick.

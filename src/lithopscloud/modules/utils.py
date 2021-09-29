@@ -232,8 +232,9 @@ def verify_paths(input_path, output_path):
         return True
 
     def _is_valid_output_path(path):
-        prefix_directory = path.rsplit('/', 1)[0]
-        if os.path.isdir(prefix_directory):
+        dir_file = path.rsplit('/', 1)
+        prefix_directory = dir_file[0]
+        if len(dir_file) == 1 or os.path.isdir(prefix_directory):
             return path
         else:
             print(color_msg(f"{prefix_directory} doesn't lead to an existing directory", color=Color.RED))
