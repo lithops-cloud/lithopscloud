@@ -1,11 +1,18 @@
+import importlib
 import os
 import re
+import subprocess
+import sys
+import tempfile
 import time
-
+from enum import Enum
 import inquirer
+import yaml
 from inquirer import errors
 
 CACHE = {}
+NEW_INSTANCE = 'Create a new'  # guaranteed substring in every 'create new instance' option prompted to user.
+
 
 def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothing=None, validate=True, carousel=True):
     if (len(choices) == 0 and do_nothing == None):
@@ -98,72 +105,216 @@ def find_default(template_dict, objects, name=None, id=None):
                     return obj['name']
 
 
-def free_dialog(msg, default=None):
+def free_dialog(msg, default=None, validate=True):
     question = [
         inquirer.Text('answer',
                       message=msg,
-                      default=default)]
+                      default=default,
+                      validate=validate)]
     answer = inquirer.prompt(question, raise_keyboard_interrupt=True)
     return answer
 
 
-def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None, multiple_choice=False):
+def get_confirmation(msg, default=None):
+    questions = [
+        inquirer.Confirm('answer',
+                         message=msg,
+                         default=default,
+                         ), ]
+    answer = inquirer.prompt(questions, raise_keyboard_interrupt=True)
+
+    return answer
+
+
+def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None, carousel=True):
     """prompt options to user and returns user choice.
       :param str instance_to_create: when initialized to true adds a 'create' option that allows the user
                             to create an instance rather than to opt for one of the options."""
 
-    if len(choices) == 1:
-        print(
-            f"\033[92mA single option was found in response to the request: '{msg}'. \n{choices[0]} was automatically chosen\n\033[0m")
-        return {'answer': choices[0]}
-
     if instance_to_create:
-        choices.insert(0, f'Create a new {instance_to_create}')
+        choices.insert(0, color_msg(f'Create a new {instance_to_create}', style=Style.ITALIC))
 
     if len(choices) == 0:
         raise Exception(
             f"No options were found to satisfy the following request: {msg}")
+
+    if len(choices) == 1:
+        if instance_to_create:
+            print(color_msg(f"\nNo existing instances were found in relation to the request: "
+                            f"'{msg}'. Create a new one to proceed. ", color=Color.RED))
+        else:
+            print(color_msg(f"single option was found in response to the request: '{msg}'."
+                            f" \n{choices[0]} was automatically chosen\n", color=Color.ORANGE))
+            return {'answer': choices[0]}
 
     questions = [
         inquirer.List('answer',
                       message=msg,
                       choices=choices,
                       default=default,
-                      )] if not multiple_choice else \
-        [inquirer.Checkbox('answer',
-                           message=msg,
-                           choices=choices,
-                           default=default,
-                           )]
+                      carousel=carousel
+                      )]
 
     answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
-    while not answers['answer'] and multiple_choice:
-        print("You must choose at least one option.\n"
-              "To pick an option please use the right arrow key '->' to select and the left arrow key '<-' to cancel.")
-        answers = inquirer.prompt(questions)
-
     return answers
 
-#ToDo add as decorator to code_engine's ce_client.get_kubeconfig
-def retry_on_except(func):
-    retries = 0  # constants will be replaced by arguments to decorator:
-    sleep_duration = 0
-    def decorated_func(*args, **kwargs):
-        name = func.__name__
-        e = None
-        for retry in range(retries):
-            try:
-                result = func(*args, **kwargs)
-                return result
-            except Exception as e:
-                msg = f"Error in {name}, {e}, retries left {retries - retry}"
-                print(msg)
-                print(e)
 
-                args[0]._init()
-                time.sleep(sleep_duration)
+def retry_on_except(retries, sleep_duration):
+    """A decorator that calls the decorated function up to a number of times equals to 'retires' with a given
+      'sleep_duration' in between"""
 
-        raise e
+    def retry_on_except_warpper(func):
+        def func_wrapper(*args, **kwargs):
+            function_name = func.__name__
 
-    return decorated_func
+            for retry in range(retries):
+                try:
+                    result = func(*args, **kwargs)
+                    return result
+                except Exception as e:
+                    msg = f"Error in {function_name}, {e}, retries left {retries - retry - 1}"
+                    print(color_msg(msg, color=Color.RED))
+
+                    if retry < retries - 1:  # avoid sleeping after last failure
+                        time.sleep(sleep_duration)
+            print(color_msg(f"\nConfig tool was terminated, "
+                            f"as it can't progress without the successful activation of {function_name}",
+                            color=Color.RED))
+            sys.exit(0)
+
+        return func_wrapper
+
+    return retry_on_except_warpper
+
+
+def test_config_file(config_file_path):
+    """testing provided config file with a simple test  """
+    confirm_test_run = True
+    lithops_installed = importlib.util.find_spec("lithops")
+    if not lithops_installed:
+        print(color_msg("Lithops must be installed to ", color=Color.RED))
+
+    with open(config_file_path) as config_file:
+        base_config = yaml.safe_load(config_file)
+
+    if {'ibm_vpc', 'provider'}.intersection(base_config.keys()):
+        confirm_test_run = get_confirmation(
+            color_msg("*Warning* it will take a considerable amount of time to initialize the virtual machine. "
+                      "Continue?", color=Color.RED))
+
+    if 'code_engine' in base_config.keys():
+        run_cmd(f'lithops clean -c {config_file_path} ')
+
+    if confirm_test_run:
+        run_cmd(f"lithops test -c {config_file_path}")
+
+
+def run_cmd(cmd):
+    """runs a command via cli while constantly printing the output from the read pipe"""
+
+    # small buffer size forces the process not to buffer the output, thus printing it instantly.
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, bufsize=1, shell=True)
+    for line in iter(process.stdout.readline, b''):
+        print(line.decode())
+    process.stdout.close()
+    process.wait()
+
+
+def verify_paths(input_path, output_path):
+    """:returns a valid input and output path files, in accordance with provided paths.
+        if a given path is invalid, and user is unable to rectify, a default path will be chosen in its stead. """
+
+    def _is_valid_input_path(path):
+        if not os.path.isfile(path):
+            print(color_msg(f"\nError - Path: '{path}' doesn't point to a file. ", color=Color.RED))
+            return False
+        return True
+
+    def _is_valid_output_path(path):
+        prefix_directory = path.rsplit('/', 1)[0]
+        if os.path.isdir(prefix_directory):
+            return path
+        else:
+            print(color_msg(f"{prefix_directory} doesn't lead to an existing directory", color=Color.RED))
+            return False
+
+    def _prompt_user(path, default_config_file, verify_func, request, default_msg):
+        while True:
+            if not path:
+                print(color_msg(default_msg, color=Color.LIGHTGREEN))
+                return default_config_file
+
+            if verify_func(path):
+                return path
+            else:
+                path = free_dialog(request)['answer']
+
+    input_path = _prompt_user(input_path, '', _is_valid_input_path,
+                              "Provide a path to your existing config file, or leave blank to configure from template",
+                              'Default input file was chosen\n')
+    output_path = _prompt_user(output_path, tempfile.mkstemp(suffix='.yaml')[1], _is_valid_output_path,
+                               "Provide a custom path for your config file, or leave blank for default output location",
+                               'Default output path was chosen\n')
+    return input_path, output_path
+
+
+def color_msg(msg, color=None, style=None, background=None):
+    """reformat a given string and returns it, matching the desired color,style and background in Ansi color code.
+        parameters are Enums of the classes: Color, Style and Background."""
+
+    init = '\033['
+    end = '\033[m'
+    font = ''
+
+    if color:
+        font += color.value
+
+    if style:
+        font = font + ';' if font else font
+        font += style.value
+
+    if background:
+        font = font + ';' if font else font
+        font += background.value
+
+    return init + font + 'm' + msg + end
+
+
+class Color(Enum):
+    BLACK = '30'
+    RED = '31'
+    GREEN = '32'
+    BROWN = '33'
+    BLUE = '34'
+    PURPLE = '35'
+    CYAN = '36'
+    LIGHTGREY = '37'
+    DARKGREY = '90'
+    LIGHTRED = '91'
+    LIGHTGREEN = '92'
+    YELLOW = '93'
+    LIGHTBLUE = '94'
+    PINK = '95'
+    LIGHTCYAN = '96'
+
+
+class Style(Enum):
+    RESET = '0'
+    BOLD = '01'
+    DISABLE = '02'
+    ITALIC = '03'
+    UNDERLINE = '04'
+    REVERSE = '07'
+    STRIKETHROUGH = '09'
+
+
+class Background(Enum):
+    BLACK = '40'
+    RED = '41'
+    GREEN = '42'
+    ORANGE = '43'
+    BLUE = '44'
+    PURPLE = '45'
+    CYAN = '46'
+    LIGHTGREY = '47'

@@ -1,22 +1,23 @@
 import importlib
-import tempfile
 import pkg_resources
 import os
 import click
 import yaml
 
-from lithopscloud.modules.utils import get_option_from_list
+from lithopscloud.modules.utils import get_option_from_list, test_config_file, color_msg, Color, verify_paths
 
+LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops Gen2', 'Lithops Cloud Functions', \
+                                                             'Lithops Code Engine', 'Ray Gen2', 'Local Host'
 
-LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2 = 'Lithops Gen2', 'Lithops Cloud Functions', 'Lithops Code Engine', 'Ray Gen2'
 
 def select_backend(input_file, iam_api_key):
     # select backend
     backends = [
-                {'name': LITHOPS_GEN2, 'path': 'gen2.lithops'}, 
-                {'name': LITHOPS_CF, 'path': 'cloud_functions'},
-                {'name': LITHOPS_CE, 'path': 'code_engine'}, 
-                {'name': RAY_GEN2, 'path': 'gen2.ray'}
+        {'name': LITHOPS_GEN2, 'path': 'gen2.lithops'},
+        {'name': LITHOPS_CF, 'path': 'cloud_functions'},
+        {'name': LITHOPS_CE, 'path': 'code_engine'},
+        {'name': RAY_GEN2, 'path': 'gen2.ray'},
+        {'name': LOCAL_HOST, 'path': 'local_host'}
     ]
 
     base_config = {}
@@ -38,14 +39,7 @@ def select_backend(input_file, iam_api_key):
     elif base_config.get('provider'):
         default = RAY_GEN2
 
-    def validate(answers, current):
-        if current == LITHOPS_CF:
-            from inquirer.errors import ValidationError
-            raise ValidationError(current, reason=f'{current} not supported yet by this project')
-        return True
-
-    backend = get_option_from_list(
-        "Please select backend", backends, default=default, validate=validate)
+    backend = get_option_from_list("Please select a compute backend", backends, default=default)
 
     # in case input file didn't match selected option we either need to raise error or start it from scratch (defaults), currently startin from defaults
     # import pdb;pdb.set_trace()
@@ -76,30 +70,33 @@ def select_backend(input_file, iam_api_key):
 @click.command()
 @click.option('--output-file', '-o', help='Output filename to save configurations')
 @click.option('--input-file', '-i', help=f'Template for the new configuration')
-@click.option('--iam-api-key', help='IAM_API_KEY')
+@click.option('--iam-api-key', '-a', help='IAM_API_KEY')
 @click.option('--version', '-v', help=f'Get package version', is_flag=True)
-def builder(iam_api_key, output_file, input_file, version):
-
+@click.option('--verify-config', help="Path to a lithops config file you'd wish to verify via testing")
+def builder(iam_api_key, output_file, input_file, version, verify_config):
     if version:
-        print(f"{pkg_resources.get_distribution('lithopscloud').project_name} {pkg_resources.get_distribution('lithopscloud').version}")
+        print(f"{pkg_resources.get_distribution('lithopscloud').project_name} "
+              f"{pkg_resources.get_distribution('lithopscloud').version}")
         exit(0)
 
-    print(f"\n\033[92mWelcome to vpc config export helper\033[0m\n")
+    if verify_config:
+        test_config_file(verify_config)
+        exit(0)
+
+    print(color_msg("\nWelcome to lithops cloud config export helper\n", color=Color.YELLOW))
+    input_file, output_file = verify_paths(input_file, output_file)
 
     base_config, modules = select_backend(input_file, iam_api_key)
 
-    for module in modules:        
+    for module in modules:
         next_module = module(base_config)
         base_config = next_module.run()
 
-    if not output_file:
-        output_file = tempfile.mkstemp(suffix='.yaml')[1]
-
     with open(output_file, 'w') as outfile:
-        yaml.dump(base_config,  outfile, default_flow_style=False)
+        yaml.dump(base_config, outfile, default_flow_style=False)
 
     print("\n\n=================================================")
-    print(f"\033[92mCluster config file: {output_file}\033[0m")
+    print(color_msg(f"Cluster config file: {output_file}", color=Color.LIGHTGREEN))
     print("=================================================")
 
 
@@ -109,4 +106,3 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         # User interrupt the program
         exit()
-

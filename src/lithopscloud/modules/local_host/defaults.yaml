@@ -1,0 +1,4 @@
+lithops:
+  backend: 'localhost'
+  storage: 'localhost'
+

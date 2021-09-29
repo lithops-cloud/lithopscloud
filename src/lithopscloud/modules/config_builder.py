@@ -3,6 +3,7 @@ from typing import Any, Dict
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_platform_services import ResourceControllerV2, ResourceManagerV2
 from ibm_vpc import VpcV1
+from ibm_watson import IAMTokenManager
 import threading
 import time
 import sys
@@ -88,11 +89,10 @@ class ConfigBuilder:
         return resource_instances
 
     def select_resource_group(self):
-        """returns resource group id of a resource group the user will be prompted to pick
-        initializes CACHE['resource_group_id']"""
+        """returns resource group id of a resource group the user will be prompted to pick.
+        stores result in CACHE['resource_group_id'] for further usage"""
 
-        res_group_objects = self.resource_service_client.list_resource_groups().get_result()[
-            'resources']
+        res_group_objects = self.resource_service_client.list_resource_groups().get_result()['resources']
 
         default = find_default(
             self.defaults, res_group_objects, id='resource_group_id')
@@ -102,6 +102,12 @@ class ConfigBuilder:
         CACHE['resource_group_id'] = res_group_obj['id']  # cache group resource id for later use in storage
 
         return res_group_obj['id']
+
+    def get_oauth_token(self):
+        """:returns a temporary authentication token required by various IBM cloud APIs """
+
+        iam_token_manager = IAMTokenManager(apikey=self.base_config['ibm']['iam_api_key'])
+        return iam_token_manager.get_token()
 
 
 class Spinner(threading.Thread):
