@@ -147,6 +147,15 @@ def free_dialog(msg, default=None, validate=True):
     answer = inquirer.prompt(question, raise_keyboard_interrupt=True)
     return answer
 
+def password_dialog(msg, default=None, validate=True):
+    question = [
+        inquirer.Password('answer',
+                      message=msg,
+                      default=default,
+                      validate=validate)]
+    answer = inquirer.prompt(question, raise_keyboard_interrupt=True)
+    return answer
+
 
 def get_confirmation(msg, default=None):
     questions = [
@@ -162,6 +171,7 @@ def get_confirmation(msg, default=None):
 def retry_on_except(retries, sleep_duration):
     """A decorator that calls the decorated function up to a number of times equals to 'retires' with a given
       'sleep_duration' in between"""
+
 
     def retry_on_except_warpper(func):
         def func_wrapper(*args, **kwargs):
@@ -266,10 +276,8 @@ def color_msg(msg, color=None, style=None, background=None):
     init = '\033['
     end = '\033[m'
     font = ''
-
     if color:
         font += color.value
-
     if style:
         font = font + ';' if font else font
         font += style.value
