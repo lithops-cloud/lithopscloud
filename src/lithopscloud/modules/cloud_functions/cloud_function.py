@@ -145,4 +145,6 @@ class CloudFunction(ConfigBuilder):
                 print('Terminating config tool, as requested.')
                 sys.exit(0)
 
+        print(color_msg(f"A new IBM Cloud Function named '{chosen_namespace}' was created.", color=Color.LIGHTGREEN))
+
         return response['id'], chosen_namespace

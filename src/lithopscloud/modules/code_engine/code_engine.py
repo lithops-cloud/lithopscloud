@@ -45,7 +45,9 @@ class CodeEngine(ConfigBuilder):
         """returns the the namespace of a previously chosen project (identified by its guid)"""
 
         @spinner
-        @retry_on_except(retries=10, sleep_duration=7)
+        @retry_on_except(retries=10, sleep_duration=7,error_msg="IBM Cloud Code Engine is currently unavailable. "
+                                                                "Your request could not be processed. "
+                                                                "Please wait a few minutes and try again.  ")
         def _get_kubeconfig_response():
             return ce_client.get_kubeconfig(x_delegated_refresh_token=delegated_refresh_token, id=guid)
 
@@ -109,10 +111,11 @@ class CodeEngine(ConfigBuilder):
             ).get_result()
         except Exception as e:
             print(color_msg(f"Couldn't create new code engine project.\n{e} ", color=Color.RED))
-            sys.exit(0)  # used sys.exit instead of exception to cancel traceback that will hide the error message
+            sys.exit(1)  # used sys.exit instead of exception to cancel traceback that will hide the error message
 
         project_guid = response['guid']
         project_namespace = self.get_project_namespace(region, project_guid)
+        print(color_msg(f"A new Code Engine project named '{name}' was created.",color=Color.LIGHTGREEN))
 
         return region, project_namespace
 

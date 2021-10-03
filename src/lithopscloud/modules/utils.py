@@ -168,27 +168,22 @@ def get_confirmation(msg, default=None):
     return answer
 
 
-def retry_on_except(retries, sleep_duration):
+def retry_on_except(retries, sleep_duration, error_msg=''):
     """A decorator that calls the decorated function up to a number of times equals to 'retires' with a given
       'sleep_duration' in between"""
 
-
     def retry_on_except_warpper(func):
         def func_wrapper(*args, **kwargs):
-            function_name = func.__name__
-            msg = None
-
+            msg = error_msg  # transferring the value via a mediator is necessary due to decorator's restrictions.
             for retry in range(retries):
                 try:
-
                     result = func(*args, **kwargs)
                     return result
 
                 except Exception as e:
-                    msg = f"Error in {function_name}.\n{e}"
+                    msg += str(e)
                     if retry < retries - 1:  # avoid sleeping after last failure
                         time.sleep(sleep_duration)
-                    raise
 
             print(color_msg(f"{msg}\nConfig tool was terminated", color=Color.RED))
             sys.exit(1)
