@@ -114,6 +114,14 @@ def free_dialog(msg, default=None, validate=True):
     answer = inquirer.prompt(question, raise_keyboard_interrupt=True)
     return answer
 
+def password_dialog(msg, default=None, validate=True):
+    question = [
+        inquirer.Password('answer',
+                      message=msg,
+                      default=default,
+                      validate=validate)]
+    answer = inquirer.prompt(question, raise_keyboard_interrupt=True)
+    return answer
 
 def get_confirmation(msg, default=None):
     questions = [

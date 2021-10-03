@@ -3,7 +3,7 @@ from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_platform_services import IamIdentityV1
 from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator
 from typing import Any, Dict
-from lithopscloud.modules.utils import color_msg, Color, free_dialog
+from lithopscloud.modules.utils import color_msg, Color, password_dialog
 from inquirer import errors
 
 
@@ -18,7 +18,7 @@ class ApiKeyConfig(ConfigBuilder):
     def run(self, api_key=None) -> Dict[str, Any]:
         if not api_key:
             default = self.defaults.get('api_key')
-            api_key = free_dialog("Please provide " + color_msg("IBM API KEY", color=Color.CYAN),
+            api_key = password_dialog("Please provide " + color_msg("IBM API KEY", color=Color.CYAN),
                                   default=default,
                                   validate=verify_iam_api_key)['answer']
 
