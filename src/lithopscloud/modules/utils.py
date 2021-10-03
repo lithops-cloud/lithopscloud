@@ -44,6 +44,39 @@ def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothi
         return next((x for x in choices if x[choice_key] == answers['answer']), None)
 
 
+def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None, carousel=True):
+    """prompt options to user and returns user choice.
+      :param str instance_to_create: when initialized to true adds a 'create' option that allows the user
+                            to create an instance rather than to opt for one of the options."""
+
+    if instance_to_create:
+        choices.insert(0, color_msg(f'Create a new {instance_to_create}', style=Style.ITALIC))
+
+    if len(choices) == 0:
+        raise Exception(
+            f"No options were found to satisfy the following request: {msg}")
+
+    if len(choices) == 1:
+        if instance_to_create:
+            print(color_msg(f"\nNo existing instances were found in relation to the request: "
+                            f"'{msg}'. Create a new one to proceed. ", color=Color.RED))
+        else:
+            print(color_msg(f"single option was found in response to the request: '{msg}'."
+                            f" \n{choices[0]} was automatically chosen\n", color=Color.ORANGE))
+            return {'answer': choices[0]}
+
+    questions = [
+        inquirer.List('answer',
+                      message=msg,
+                      choices=choices,
+                      default=default,
+                      carousel=carousel
+                      )]
+
+    answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
+
+    return answers
+
 def find_name_id(objects, msg, obj_id=None, obj_name=None, default=None, do_nothing=None):
     if obj_id:
         # just validating that obj exists
@@ -126,40 +159,6 @@ def get_confirmation(msg, default=None):
     return answer
 
 
-def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None, carousel=True):
-    """prompt options to user and returns user choice.
-      :param str instance_to_create: when initialized to true adds a 'create' option that allows the user
-                            to create an instance rather than to opt for one of the options."""
-
-    if instance_to_create:
-        choices.insert(0, color_msg(f'Create a new {instance_to_create}', style=Style.ITALIC))
-
-    if len(choices) == 0:
-        raise Exception(
-            f"No options were found to satisfy the following request: {msg}")
-
-    if len(choices) == 1:
-        if instance_to_create:
-            print(color_msg(f"\nNo existing instances were found in relation to the request: "
-                            f"'{msg}'. Create a new one to proceed. ", color=Color.RED))
-        else:
-            print(color_msg(f"single option was found in response to the request: '{msg}'."
-                            f" \n{choices[0]} was automatically chosen\n", color=Color.ORANGE))
-            return {'answer': choices[0]}
-
-    questions = [
-        inquirer.List('answer',
-                      message=msg,
-                      choices=choices,
-                      default=default,
-                      carousel=carousel
-                      )]
-
-    answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
-
-    return answers
-
-
 def retry_on_except(retries, sleep_duration):
     """A decorator that calls the decorated function up to a number of times equals to 'retires' with a given
       'sleep_duration' in between"""
@@ -167,21 +166,22 @@ def retry_on_except(retries, sleep_duration):
     def retry_on_except_warpper(func):
         def func_wrapper(*args, **kwargs):
             function_name = func.__name__
+            msg = None
 
             for retry in range(retries):
                 try:
+
                     result = func(*args, **kwargs)
                     return result
-                except Exception as e:
-                    msg = f"Error in {function_name}, {e}, retries left {retries - retry - 1}"
-                    print(color_msg(msg, color=Color.RED))
 
+                except Exception as e:
+                    msg = f"Error in {function_name}.\n{e}"
                     if retry < retries - 1:  # avoid sleeping after last failure
                         time.sleep(sleep_duration)
-            print(color_msg(f"\nConfig tool was terminated, "
-                            f"as it can't progress without the successful activation of {function_name}",
-                            color=Color.RED))
-            sys.exit(0)
+                    raise
+
+            print(color_msg(f"{msg}\nConfig tool was terminated", color=Color.RED))
+            sys.exit(1)
 
         return func_wrapper
 
