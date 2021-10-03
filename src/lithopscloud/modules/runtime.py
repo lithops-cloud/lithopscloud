@@ -7,7 +7,7 @@ class RuntimeConfig(ConfigBuilder):
 
     @update_decorator
     def run(self) -> Dict[str, Any]:
-        runtime = free_dialog("Please provide a runtime image suitable for your current lithops version",
+        runtime = free_dialog("Runtime image compatible with installed lithops version",
                               default=self.defaults.get('runtime'))['answer']
 
         return runtime
