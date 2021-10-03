@@ -6,7 +6,9 @@ Lithopscloud is a CLI tool that greatly simplifies user experience by generating
 
 Install `lithopscloud` from pip repository
 
-        pip install lithopscloud
+```
+pip install lithopscloud
+```
 
 ## Usage
 Use the configuration tool as follows
