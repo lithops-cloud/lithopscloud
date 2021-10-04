@@ -21,7 +21,7 @@ class CloudFunction(ConfigBuilder):
 
         choices = CF_REGIONS[:]
 
-        choices.insert(0, "Search across all regions " + color_msg("*Extended runtime duration*",color=Color.RED))
+        choices.insert(0, "Search across all regions " + color_msg("*Extended runtime duration*", color=Color.RED))
         selected_region = get_option_from_list_alt("Choose a region where your preferred namespace can be found,"
                                                    " or created in", choices)['answer']
 

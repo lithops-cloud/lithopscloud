@@ -62,7 +62,7 @@ def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None
                             f"'{msg}'. Create a new one to proceed. ", color=Color.RED))
         else:
             print(color_msg(f"single option was found in response to the request: '{msg}'."
-                            f" \n{choices[0]} was automatically chosen\n", color=Color.ORANGE))
+                            f" \n{choices[0]} was automatically chosen\n", color=Color.LIGHTGREEN))
             return {'answer': choices[0]}
 
     questions = [
@@ -76,6 +76,7 @@ def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None
     answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
     return answers
+
 
 def find_name_id(objects, msg, obj_id=None, obj_name=None, default=None, do_nothing=None):
     if obj_id:
@@ -146,6 +147,7 @@ def free_dialog(msg, default=None, validate=True):
                       validate=validate)]
     answer = inquirer.prompt(question, raise_keyboard_interrupt=True)
     return answer
+
 
 def password_dialog(msg, default=None, validate=True):
     question = [
@@ -237,12 +239,13 @@ def verify_paths(input_path, output_path):
         return True
 
     def _is_valid_output_path(path):
-        prefix_directory = path.rsplit('/', 1)[0]
-        if os.path.isdir(prefix_directory):
+        """:returns path if it's either a valid absolute path, or a file name to be appended to current directory"""
+        dir_file = path.rsplit('/', 1)
+        prefix_directory = dir_file[0]
+        if len(dir_file) == 1 or os.path.isdir(prefix_directory):
             return path
         else:
             print(color_msg(f"{prefix_directory} doesn't lead to an existing directory", color=Color.RED))
-            return False
 
     def _prompt_user(path, default_config_file, verify_func, request, default_msg):
         while True:
