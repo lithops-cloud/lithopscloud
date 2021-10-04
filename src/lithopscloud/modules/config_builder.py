@@ -67,7 +67,7 @@ class ConfigBuilder:
 
     def get_resources(self, resource_type=None):
         """
-        :param resource_type: str of the following possible values: ['service_instance',resource_instance]
+        :param resource_type: str of the following possible values: ['service_instance','resource_instance']
         :return: resources belonging to a specific resource group, filtered by provided resource_type
         """
 
@@ -97,10 +97,8 @@ class ConfigBuilder:
 
         res_group_objects = self.resource_service_client.list_resource_groups().get_result()['resources']
 
-        default = find_default(
-            self.defaults, res_group_objects, id='resource_group_id')
-        res_group_obj = get_option_from_list(
-            "Select resource group", res_group_objects, default=default)
+        default = find_default(self.defaults, res_group_objects, id='resource_group_id')
+        res_group_obj = get_option_from_list("Select resource group", res_group_objects, default=default)
 
         CACHE['resource_group_id'] = res_group_obj['id']  # cache group resource id for later use in storage
 

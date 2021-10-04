@@ -21,7 +21,7 @@ class CloudFunction(ConfigBuilder):
 
         choices = CF_REGIONS[:]
 
-        choices.insert(0, "Search across all regions " + color_msg("*Extended runtime duration*",color=Color.RED))
+        choices.insert(0, "Search across all regions " + color_msg("*Extended runtime duration*", color=Color.RED))
         selected_region = get_option_from_list_alt("Choose a region where your preferred namespace can be found,"
                                                    " or created in", choices)['answer']
 
@@ -144,5 +144,7 @@ class CloudFunction(ConfigBuilder):
             except TypeError:  # allow user to exit config tool using ctrl+c
                 print('Terminating config tool, as requested.')
                 sys.exit(0)
+
+        print(color_msg(f"A new IBM Cloud Function named '{chosen_namespace}' was created.", color=Color.LIGHTGREEN))
 
         return response['id'], chosen_namespace

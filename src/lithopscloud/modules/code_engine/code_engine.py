@@ -44,7 +44,10 @@ class CodeEngine(ConfigBuilder):
     def get_project_namespace(self, region, guid):
         """returns the the namespace of a previously chosen project (identified by its guid)"""
 
-        @retry_on_except(retries=3, sleep_duration=7)
+        @spinner
+        @retry_on_except(retries=10, sleep_duration=7,error_msg="IBM Cloud Code Engine is currently unavailable. "
+                                                                "Your request could not be processed. "
+                                                                "Please wait a few minutes and try again.  ")
         def _get_kubeconfig_response():
             return ce_client.get_kubeconfig(x_delegated_refresh_token=delegated_refresh_token, id=guid)
 
@@ -85,8 +88,8 @@ class CodeEngine(ConfigBuilder):
                     project_name = resource['parameters']['name']
                 else:
                     project_name = resource['name']
-                ce_instances[project_name] = {'region': resource['region_id'],
-                                              'guid': resource['guid']}
+                ce_instances[f"{project_name} {color_msg(resource['region_id'],color=Color.YELLOW)}"] = \
+                    {'region': resource['region_id'], 'guid': resource['guid']}
 
         return ce_instances
 
@@ -94,7 +97,7 @@ class CodeEngine(ConfigBuilder):
         """Creates a new project. requires a paid account.
         :returns the new project's name and namespace.  """
 
-        region = get_option_from_list_alt('Please choose a region you would like to create your project in :',
+        region = get_option_from_list_alt('Please choose a region you would like to create your project in',
                                           CE_REGIONS)['answer']
 
         name = free_dialog("Please name your new Code Engine project")['answer']
@@ -108,10 +111,11 @@ class CodeEngine(ConfigBuilder):
             ).get_result()
         except Exception as e:
             print(color_msg(f"Couldn't create new code engine project.\n{e} ", color=Color.RED))
-            sys.exit(0)  # used sys.exit instead of exception to cancel traceback that will hide the error message
+            sys.exit(1)  # used sys.exit instead of exception to cancel traceback that will hide the error message
 
         project_guid = response['guid']
         project_namespace = self.get_project_namespace(region, project_guid)
+        print(color_msg(f"A new Code Engine project named '{name}' was created.",color=Color.LIGHTGREEN))
 
         return region, project_namespace
 
