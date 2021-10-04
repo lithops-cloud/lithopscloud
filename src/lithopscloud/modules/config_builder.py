@@ -95,7 +95,11 @@ class ConfigBuilder:
         """returns resource group id of a resource group the user will be prompted to pick.
         stores result in CACHE['resource_group_id'] for further usage"""
 
-        res_group_objects = self.resource_service_client.list_resource_groups().get_result()['resources']
+        @spinner
+        def get_resource_groups():
+            return self.resource_service_client.list_resource_groups().get_result()['resources']
+
+        res_group_objects = get_resource_groups()
 
         default = find_default(self.defaults, res_group_objects, id='resource_group_id')
         res_group_obj = get_option_from_list("Select resource group", res_group_objects, default=default)
