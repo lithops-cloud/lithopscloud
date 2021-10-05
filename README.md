@@ -14,13 +14,13 @@ pip install lithopscloud
 Use the configuration tool as follows
 
 ```
-    lithopscloud [--iam-api-key IAM_API_KEY] [-i INPUT_FILE] [-o OUTPUT_PATH] [--verify_config CONFIG_FILE_PATH] [--version]
+lithopscloud [--iam-api-key IAM_API_KEY] [-i INPUT_FILE] [-o OUTPUT_PATH] [--verify_config CONFIG_FILE_PATH] [--version]
 ```
 Get a short description of the available flags via ```lithopscloud --help```
 
 #### Flags Detailed Description
 
-[//]: <> (<img width=125/> is used in the following table to create spacing) 
+<!--- <img width=125/> is used in the following table to create spacing --->
  |<span style="color:orange">Key|<span style="color:orange">Default|<span style="color:orange">Mandatory|<span style="color:orange">Additional info|
  |---|---|---|---|
  | iam-api-key   | |yes|IBM Cloud API key. To generate a new API Key, adhere to the following [guide](https://www.ibm.com/docs/en/spectrumvirtualizecl/8.1.3?topic=installing-creating-api-key)
@@ -71,7 +71,7 @@ Get a short description of the available flags via ```lithopscloud --help```
 </table>
 
 
-##For Contributors
+## For Contributors
 
 ### Add new unsupported sections to config file
 
