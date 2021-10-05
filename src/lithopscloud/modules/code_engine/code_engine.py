@@ -3,10 +3,9 @@ import requests
 import yaml
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_code_engine_sdk.ibm_cloud_code_engine_v1 import IbmCloudCodeEngineV1
-from lithopscloud.modules.utils import CACHE, free_dialog, retry_on_except, color_msg, Color, NEW_INSTANCE
+from lithopscloud.modules.utils import CACHE, free_dialog, retry_on_except, color_msg, Color, NEW_INSTANCE, inquire_user
 from lithopscloud.modules.config_builder import ConfigBuilder, spinner
 from typing import Any, Dict
-from lithopscloud.modules.utils import get_option_from_list_alt
 
 CE_REGIONS = []
 
@@ -22,26 +21,25 @@ class CodeEngine(ConfigBuilder):
         init_ce_region_list()
 
         ce_instances = self.get_ce_instances()
-        chosen_project = get_option_from_list_alt('Please pick one of your Code Engine projects',
-                                                  list(ce_instances.keys()), instance_to_create='project')['answer']
+
+        chosen_project = inquire_user('Please pick one of your Code Engine projects',
+                                      color_ce_instances_with_regions(ce_instances),
+                                      create_new_instance=NEW_INSTANCE + ' project')
 
         if NEW_INSTANCE in chosen_project:
-            region, project_namespace = self.create_new_project()
-        else:
-            project_guid = ce_instances[chosen_project]['guid']
-            region = ce_instances[chosen_project]['region']
+            chosen_project = self.create_new_project()
 
-            project_namespace = self.get_project_namespace(region, project_guid)
+        project_namespace = self.get_project_namespace(chosen_project)
 
         self.base_config['code_engine']['namespace'] = project_namespace
-        self.base_config['code_engine']['region'] = region
+        self.base_config['code_engine']['region'] = chosen_project['region']
         self.base_config['lithops']['backend'] = 'code_engine'
 
         print(color_msg("\n------IBM Code Engine was configured successfully------\n", color=Color.LIGHTGREEN))
 
         return self.base_config
 
-    def get_project_namespace(self, region, guid):
+    def get_project_namespace(self, project_instance):
         """returns the the namespace of a previously chosen project (identified by its guid)"""
 
         @spinner
@@ -49,10 +47,10 @@ class CodeEngine(ConfigBuilder):
                                                                 "Your request could not be processed. "
                                                                 "Please wait a few minutes and try again.  ")
         def _get_kubeconfig_response():
-            return ce_client.get_kubeconfig(x_delegated_refresh_token=delegated_refresh_token, id=guid)
+            return ce_client.get_kubeconfig(x_delegated_refresh_token=delegated_refresh_token, id=project_instance['guid'])
 
         ce_client = IbmCloudCodeEngineV1(authenticator=IAMAuthenticator(apikey=self.base_config['ibm']['iam_api_key']))
-        ce_client.set_service_url(f'https://api.{region}.codeengine.cloud.ibm.com/api/v1')
+        ce_client.set_service_url(f"https://api.{project_instance['region']}.codeengine.cloud.ibm.com/api/v1")
 
         iam_response = requests.post('https://iam.cloud.ibm.com/identity/token',
                                      headers={'Content-Type': 'application/x-www-form-urlencoded'},
@@ -77,7 +75,7 @@ class CodeEngine(ConfigBuilder):
         """return available code engine instances, along with their corresponding region and group user id."""
 
         print("Obtaining all existing Code Engine projects...\n")
-        ce_instances = {}
+        ce_instances = []
 
         res_group_objects = self.get_resources()
 
@@ -87,8 +85,8 @@ class CodeEngine(ConfigBuilder):
                     project_name = resource['parameters']['name']
                 else:
                     project_name = resource['name']
-                ce_instances[f"{project_name} {color_msg(resource['region_id'],color=Color.YELLOW)}"] = \
-                    {'region': resource['region_id'], 'guid': resource['guid']}
+
+                ce_instances.append({"name": project_name, 'region': resource['region_id'], 'guid': resource['guid']})
 
         return ce_instances
 
@@ -96,8 +94,8 @@ class CodeEngine(ConfigBuilder):
         """Creates a new project. requires a paid account.
         :returns the new project's name and namespace.  """
 
-        region = get_option_from_list_alt('Please choose a region you would like to create your project in',
-                                          CE_REGIONS)['answer']
+        region = inquire_user('Please choose a region you would like to create your project in',
+                              CE_REGIONS, handle_strings=True)
 
         name = free_dialog("Please name your new Code Engine project")['answer']
 
@@ -113,10 +111,9 @@ class CodeEngine(ConfigBuilder):
             sys.exit(1)  # used sys.exit instead of exception to cancel traceback that will hide the error message
 
         project_guid = response['guid']
-        project_namespace = self.get_project_namespace(region, project_guid)
         print(color_msg(f"A new Code Engine project named '{name}' was created.",color=Color.LIGHTGREEN))
 
-        return region, project_namespace
+        return {"name": name, 'region': region, 'guid': project_guid}
 
 
 @retry_on_except(retries=3, sleep_duration=7)
@@ -126,3 +123,10 @@ def init_ce_region_list():
         'https://globalcatalog.cloud.ibm.com/api/v1/814fb158-af9c-4d3c-a06b-c7da42392845/%2A').json()
     for resource in response['resources']:
         CE_REGIONS.append(resource['geo_tags'][0])
+
+
+def color_ce_instances_with_regions(ce_instances):
+    """colors each ce_instance name and affix its region to it"""
+    for instance in ce_instances:
+        instance['name'] = instance['name'] + ' ' + color_msg(instance['region'], color=Color.YELLOW)
+    return ce_instances

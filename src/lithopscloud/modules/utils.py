@@ -44,38 +44,48 @@ def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothi
         return next((x for x in choices if x[choice_key] == answers['answer']), None)
 
 
-def get_option_from_list_alt(msg, choices, instance_to_create=None, default=None, carousel=True):
+def inquire_user(msg, choices, default=None, choice_key='name', create_new_instance=None,
+                 handle_strings=False, validate=True, carousel=True):
     """prompt options to user and returns user choice.
-      :param str instance_to_create: when initialized to true adds a 'create' option that allows the user
-                            to create an instance rather than to opt for one of the options."""
+      :param str create_new_instance: when initialized adds a 'create' option that allows the user
+                            to create an instance rather than to opt for one of the options.
+      :param bool handle_strings: when set to True handles input of list of strings instead of list of dicts.
+      :param str choice_key: creates options list presented to user (choices_keys) using this key """
 
-    if instance_to_create:
-        choices.insert(0, color_msg(f'Create a new {instance_to_create}', style=Style.ITALIC))
+    # options to be displayed to user
+    choices_keys = [choice[choice_key] for choice in choices] if not handle_strings else choices
 
-    if len(choices) == 0:
-        raise Exception(
-            f"No options were found to satisfy the following request: {msg}")
+    if create_new_instance:
+        choices_keys.insert(0, color_msg(create_new_instance, style=Style.ITALIC))
 
-    if len(choices) == 1:
-        if instance_to_create:
+    if len(choices_keys) == 0:
+        raise Exception(f"No options were found to satisfy the following request: {msg}")
+
+    if len(choices_keys) == 1:
+        if create_new_instance:
             print(color_msg(f"\nNo existing instances were found in relation to the request: "
                             f"'{msg}'. Create a new one to proceed. ", color=Color.RED))
         else:
             print(color_msg(f"single option was found in response to the request: '{msg}'."
                             f" \n{choices[0]} was automatically chosen\n", color=Color.LIGHTGREEN))
-            return {'answer': choices[0]}
+            return choices[0]
 
     questions = [
         inquirer.List('answer',
                       message=msg,
-                      choices=choices,
+                      choices=choices_keys,
                       default=default,
-                      carousel=carousel
+                      validate=validate,
+                      carousel=carousel,
                       )]
-
     answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
-    return answers
+    if create_new_instance and create_new_instance in answers['answer']:
+        return create_new_instance
+    elif handle_strings:  # returns the string the user chose
+        return answers['answer']
+    else:  # returns the object belonging to user's choice
+        return next((x for x in choices if x[choice_key] == answers['answer']), None)
 
 
 def find_name_id(objects, msg, obj_id=None, obj_name=None, default=None, do_nothing=None):
@@ -152,9 +162,9 @@ def free_dialog(msg, default=None, validate=True):
 def password_dialog(msg, default=None, validate=True):
     question = [
         inquirer.Password('answer',
-                      message=msg,
-                      default=default,
-                      validate=validate)]
+                          message=msg,
+                          default=default,
+                          validate=validate)]
     answer = inquirer.prompt(question, raise_keyboard_interrupt=True)
     return answer
 
@@ -170,9 +180,11 @@ def get_confirmation(msg, default=None):
     return answer
 
 
-def retry_on_except(retries, sleep_duration, error_msg=''):
+def retry_on_except(retries, sleep_duration, error_msg='', default=None):
     """A decorator that calls the decorated function up to a number of times equals to 'retires' with a given
-      'sleep_duration' in between"""
+      'sleep_duration' in between.
+       if the function failed the allotted number of retries, a default value will be returned,
+       granted that one was provided, else the config tool will be terminated. """
 
     def retry_on_except_warpper(func):
         def func_wrapper(*args, **kwargs):
@@ -186,9 +198,12 @@ def retry_on_except(retries, sleep_duration, error_msg=''):
                     msg += str(e)
                     if retry < retries - 1:  # avoid sleeping after last failure
                         time.sleep(sleep_duration)
-
-            print(color_msg(f"{msg}\nConfig tool was terminated", color=Color.RED))
-            sys.exit(1)
+            if default:
+                print(color_msg(f"{msg}", color=Color.RED))
+                return default
+            else:
+                print(color_msg(f"{msg}\nConfig tool was terminated", color=Color.RED))
+                sys.exit(1)
 
         return func_wrapper
 
