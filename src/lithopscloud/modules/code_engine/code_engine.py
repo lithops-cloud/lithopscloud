@@ -73,7 +73,6 @@ class CodeEngine(ConfigBuilder):
         cluster_namespace = dict_struct['contexts'][0]['context']['namespace']
         return cluster_namespace
 
-    @spinner
     def get_ce_instances(self):
         """return available code engine instances, along with their corresponding region and group user id."""
 
