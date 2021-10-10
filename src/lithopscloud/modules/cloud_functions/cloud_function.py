@@ -4,7 +4,7 @@ import sys
 from typing import Dict, Any
 import requests
 from lithopscloud.modules.config_builder import ConfigBuilder, spinner
-from lithopscloud.modules.utils import get_option_from_list_alt, free_dialog, color_msg, Color, NEW_INSTANCE
+from lithopscloud.modules.utils import free_dialog, color_msg, Color, NEW_INSTANCE, inquire_user
 
 CF_REGIONS = ['eu-de', 'eu-gb', 'us-south', 'us-east', 'au-syd', 'jp-tok']
 
@@ -16,56 +16,53 @@ class CloudFunction(ConfigBuilder):
 
     def run(self, api_key=None) -> Dict[str, Any]:
 
-        is_cf_based_namespace = False  # set to true if namespace is cloud foundry based
         print(color_msg("\n\nConfiguring IBM cloud functions:\n", color=Color.YELLOW))
 
         choices = CF_REGIONS[:]
+        all_regions = "Search across all regions " + color_msg("*Extended runtime duration*", color=Color.RED)
+        choices.insert(0, all_regions)
+        selected_region = inquire_user("Choose a region where your preferred namespace can be found, or created in",
+                                       choices, handle_strings=True)
 
-        choices.insert(0, "Search across all regions " + color_msg("*Extended runtime duration*", color=Color.RED))
-        selected_region = get_option_from_list_alt("Choose a region where your preferred namespace can be found,"
-                                                   " or created in", choices)['answer']
-
-        if 'Search across all regions' in selected_region:
-            selected_region = ''  # mark region as not yet selected.
+        if all_regions in selected_region:
+            selected_region = ''  # mark region as not selected.
 
         existing_namespaces = self.get_cloud_function_namespaces(selected_region)
 
-        msg = 'Please pick one of your cloud function namespaces'
-        msg = f'{msg} in the {selected_region} region' if selected_region else msg
-        chosen_namespace = get_option_from_list_alt(msg,
-                                                    list(existing_namespaces.keys()),
-                                                    instance_to_create='namespace',
-                                                    default=self.base_config['ibm_cf']['namespace'])['answer']
+        base_msg = 'Please pick one of your cloud function namespaces'
+        msg = f'{base_msg} in the {selected_region} region' if selected_region else base_msg
+        chosen_namespace = inquire_user(msg,
+                                        existing_namespaces,
+                                        create_new_instance=NEW_INSTANCE + ' namespace',
+                                        default=self.base_config['ibm_cf']['namespace'])
 
         if NEW_INSTANCE in chosen_namespace:
             if not selected_region:
-                selected_region = get_option_from_list_alt('Please choose the region you would like '
-                                                           'to create a namespace in', CF_REGIONS)['answer']
-            namespace_id, chosen_namespace = self.create_cloud_function_namespaces(selected_region)
-            del self.base_config['ibm_cf']['api_key']
+                selected_region = inquire_user('Please choose the region you would like to create a namespace in',
+                                               CF_REGIONS, handle_strings=True)
+            chosen_namespace = self.create_cloud_function_namespaces(selected_region)
+            del self.base_config['ibm_cf']['api_key']  # newly created namespace won't be cloud foundry based
 
         else:  # user would like to use an already existing namespace
-            selected_region = existing_namespaces[chosen_namespace]['region']
+            selected_region = chosen_namespace['region']
 
-            if existing_namespaces[chosen_namespace]['type'] == 'CF_based':
-                print(color_msg("Consider creating an IAM enabled namespace to leverage IAM access control.",color=Color.RED))
+            if chosen_namespace['type'] == 'CF_based':
+                print(color_msg("Consider creating an IAM enabled namespace to leverage IAM access control.",
+                                color=Color.RED))
                 cf_api_key = input("Please provide your cloud foundry api_key from: "
                                    "https://cloud.ibm.com/functions/namespace-settings ")
 
                 self.base_config['ibm_cf']['api_key'] = cf_api_key
-                del self.base_config['ibm_cf']['namespace_id']
-                is_cf_based_namespace = True
+                del self.base_config['ibm_cf']['namespace_id']  # chosen namespace isn't iam-api-key based
 
             else:  # API_based namespace
-                namespace_id = existing_namespaces[chosen_namespace]['id']
-                del self.base_config['ibm_cf']['api_key']
+                del self.base_config['ibm_cf']['api_key']  # chosen namespace isn't cloud foundry based
 
-        if not is_cf_based_namespace:  # namespace is either newly created or is an available API based namespace
-
-            self.base_config['ibm_cf']['namespace_id'] = namespace_id
+        if 'namespace_id' in self.base_config['ibm_cf']:  # namespace is API based namespace (either new or existing)
+            self.base_config['ibm_cf']['namespace_id'] = chosen_namespace['id']
 
         self.base_config['ibm_cf']['endpoint'] = f'https://{selected_region}.functions.cloud.ibm.com'
-        self.base_config['ibm_cf']['namespace'] = chosen_namespace
+        self.base_config['ibm_cf']['namespace'] = chosen_namespace['name']
 
         print(color_msg("\n------IBM Cloud Function was configured successfully------\n", color=Color.LIGHTGREEN))
         return self.base_config
@@ -86,12 +83,12 @@ class CloudFunction(ConfigBuilder):
 
     @spinner
     def get_cloud_function_namespaces(self, selected_region):
-        """returns the names of the namespaces within a given region."""
+        """returns relevant metadata on existing namespaces within a given region."""
         msg = f"Obtaining Cloud Function namespaces in {selected_region}" if selected_region \
             else "Obtaining all existing Cloud Function namespaces"
         print(msg + '...\n')
 
-        namespaces = {}
+        namespaces = []
 
         for region in [selected_region] if selected_region else CF_REGIONS:
             collecting_namespaces = True
@@ -108,10 +105,12 @@ class CloudFunction(ConfigBuilder):
 
                 for name_space in namespace_metadata['namespaces']:
                     if 'name' in name_space:  # API based namespace
-                        namespaces[name_space['name']] = {'type': 'API_based', 'id': name_space['id'],
-                                                          'region': name_space['location']}
+                        namespaces.append({'name': name_space['name'], 'type': 'API_based', 'id': name_space['id'],
+                                           'region': name_space['location']})
+
                     else:  # cloud foundry based namespace
-                        namespaces[name_space['id']] = {'type': 'CF_based', 'region': name_space['location']}
+                        namespaces.append(
+                            {'name': name_space['id'], 'type': 'CF_based', 'region': name_space['location']})
 
         return namespaces
 
@@ -131,8 +130,8 @@ class CloudFunction(ConfigBuilder):
         namespace_created = False
         while not namespace_created:
             try:
-                chosen_namespace = free_dialog("Please name your IBM cloud function namespace")['answer']
-                data = {"name": chosen_namespace, "resource_group_id": resource_group_id,
+                name = free_dialog("Please name your IBM cloud function namespace")['answer']
+                data = {"name": name, "resource_group_id": resource_group_id,
                         "resource_plan_id": "functions-base-plan"}
                 response = request_new_namespace()
 
@@ -145,6 +144,7 @@ class CloudFunction(ConfigBuilder):
                 print('Terminating config tool, as requested.')
                 sys.exit(0)
 
-        print(color_msg(f"A new IBM Cloud Function named '{chosen_namespace}' was created.", color=Color.LIGHTGREEN))
+        print(color_msg(f"A new IBM Cloud Function named '{name}' was created.", color=Color.LIGHTGREEN))
 
-        return response['id'], chosen_namespace
+        return {'name': name, 'type': 'API_based', 'id': response['id'], 'region': region}
+
