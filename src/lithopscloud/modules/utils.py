@@ -87,29 +87,27 @@ def inquire_user(msg, choices, default=None, choice_key='name', create_new_insta
     else:  # returns the object belonging to user's choice
         return next((x for x in choices if x[choice_key] == answers['answer']), None)
 
-
-def find_name_id(objects, msg, obj_id=None, obj_name=None, default=None, do_nothing=None):
+def find_obj(objects, msg, obj_id=None, obj_name=None, default=None, do_nothing=None):
+    obj = None
     if obj_id:
         # just validating that obj exists
-        obj_name = next((obj['name']
-                         for obj in objects if obj['id'] == obj_id), None)
-        if not obj_name:
+        obj = next((obj for obj in objects if obj['id'] == obj_id), None)
+        if not obj:
             raise Exception(f'Object with specified id {obj_id} not found')
     if obj_name:
-        obj_id = next((obj['id']
-                       for obj in objects if obj['name'] == obj_name), None)
+        obj = next((obj for obj in objects if obj['name'] == obj_name), None)
 
-    if not obj_id and not obj_name:
+    if not obj:
         obj = get_option_from_list(
             msg, objects, default=default, do_nothing=do_nothing)
-        if do_nothing and obj == do_nothing:
-            return None, None
+        return obj
 
-        obj_id = obj['id']
-        obj_name = obj['name']
+def find_name_id(objects, msg, obj_id=None, obj_name=None, default=None, do_nothing=None):
+    obj = find_obj(objects, msg, obj_id, obj_name, default, do_nothing)
+    if do_nothing and obj == do_nothing:
+        return None, None
 
-    return obj_name, obj_id
-
+    return obj['name'], obj['id']
 
 def validate_not_empty(answers, current):
     if not current:
