@@ -249,6 +249,7 @@ class VPCConfig(ConfigBuilder):
                     print(
                         f"\033[92mSecurity group {sg_name} been updated with required rules\033[0m\n")
 
+                    break
             else:
                 # validate chosen vpc has all required
                 # starting from validating each of its subnets has public gateway
