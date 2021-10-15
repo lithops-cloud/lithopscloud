@@ -23,7 +23,11 @@ def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothi
     if (len(choices) == 1 and not do_nothing):
         return (choices[0])
 
-    choices_keys = [choice[choice_key] for choice in choices]
+    if choice_key:
+        choices_keys = [choice[choice_key] for choice in choices]
+    else:
+        choices_keys = [choice for choice in choices]
+
     if do_nothing:
         choices_keys.insert(0, do_nothing)
 
@@ -41,7 +45,10 @@ def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothi
     if answers['answer'] == do_nothing:
         return do_nothing
     else:
-        return next((x for x in choices if x[choice_key] == answers['answer']), None)
+        if choice_key:
+            return next((x for x in choices if x[choice_key] == answers['answer']), None)
+        else:
+            return next((x for x in choices if x == answers['answer']), None)
 
 
 def inquire_user(msg, choices, default=None, choice_key='name', create_new_instance=None,
