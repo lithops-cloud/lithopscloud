@@ -1,7 +1,9 @@
 import os
+import subprocess
 from typing import Any, Dict
 
 import inquirer
+from inquirer import errors
 from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator, spinner
 from lithopscloud.modules.utils import (find_default, find_name_id,
                                         validate_exists, validate_not_empty)
@@ -77,6 +79,21 @@ class SshKeyConfig(ConfigBuilder):
         super().__init__(base_config)
         self.base_config = base_config
 
+    def _validate_keypair(self, answers, current):
+#        breakpoint()
+        if not current or not os.path.exists(os.path.abspath(os.path.expanduser(current))):
+        raise errors.ValidationError(
+            '', reason=f"File {current} doesn't exist")
+
+        public_res = self.ibm_vpc_client.get_key(self.ssh_key_id).get_result()['public_key'].split(' ')[1]
+        private_res = subprocess.getoutput([f"ssh-keygen -y -f {current} | cut -d' ' -f 2"])
+
+        if not public_res == private_res:
+            raise errors.ValidationError(
+            '', reason=f"Private ssh key {current} and public key {self.ssh_key_name} are not a pair")
+
+        return public_res == private_res
+
     @update_decorator
     def run(self) -> Dict[str, Any]:
         @spinner
@@ -96,10 +113,13 @@ class SshKeyConfig(ConfigBuilder):
             ssh_key_name, ssh_key_id, ssh_key_path = register_ssh_key(
                 self.ibm_vpc_client, self.base_config)
 
+        self.ssh_key_id = ssh_key_id
+        self.ssh_key_name = ssh_key_name
+
         if not ssh_key_path:
             questions = [
                 inquirer.Text(
-                    "private_key_path", message=f'Please paste path to \033[92mprivate\033[0m ssh key associated with selected public key {ssh_key_name}', validate=validate_exists, default=self.defaults.get('ssh_key_filename') or "~/.ssh/id_rsa")
+                    "private_key_path", message=f'Please paste path to \033[92mprivate\033[0m ssh key associated with selected public key {ssh_key_name}', validate=self._validate_keypair, default=self.defaults.get('ssh_key_filename') or "~/.ssh/id_rsa")
             ]
             answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
             ssh_key_path = os.path.abspath(
