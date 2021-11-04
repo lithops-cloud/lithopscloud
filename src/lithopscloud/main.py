@@ -3,8 +3,9 @@ import pkg_resources
 import os
 import click
 import yaml
+from lithopscloud.modules.config_verification import verify_config_file
 
-from lithopscloud.modules.utils import get_option_from_list, test_config_file, color_msg, Color, verify_paths
+from lithopscloud.modules.utils import get_option_from_list, color_msg, Color, verify_paths
 
 LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops Gen2', 'Lithops Cloud Functions', \
                                                              'Lithops Code Engine', 'Ray Gen2', 'Local Host'
@@ -25,7 +26,7 @@ def select_backend(input_file, iam_api_key):
     if input_file:
         with open(input_file) as f:
             base_config = yaml.safe_load(f)
-
+    # TODO: also verify existence of base_config['lithops']['backend']
     default = None
     if base_config.get('lithops'):
         mode = base_config['lithops']['mode'] if base_config['lithops'].get(
@@ -72,19 +73,21 @@ def select_backend(input_file, iam_api_key):
 @click.option('--input-file', '-i', help=f'Template for the new configuration')
 @click.option('--iam-api-key', '-a', help='IAM_API_KEY')
 @click.option('--version', '-v', help=f'Get package version', is_flag=True)
-@click.option('--verify-config', help="Path to a lithops config file you'd wish to verify via testing")
+@click.option('--verify-config', help="Path to a lithops config file you'd wish to verify."
+                                      " Outputs a usable config file if possible.")
 def builder(iam_api_key, output_file, input_file, version, verify_config):
     if version:
         print(f"{pkg_resources.get_distribution('lithopscloud').project_name} "
               f"{pkg_resources.get_distribution('lithopscloud').version}")
         exit(0)
 
-    if verify_config:
-        test_config_file(verify_config)
-        exit(0)
-
     print(color_msg("\nWelcome to lithops cloud config export helper\n", color=Color.YELLOW))
-    input_file, output_file = verify_paths(input_file, output_file)
+
+    input_file, output_file = verify_paths(input_file, output_file, verify_config)
+
+    if verify_config:
+        verify_config_file(verify_config, output_file)
+        exit(0)
 
     base_config, modules = select_backend(input_file, iam_api_key)
 

@@ -82,7 +82,7 @@ class CloudFunction(ConfigBuilder):
         return json_struct
 
     @spinner
-    def get_cloud_function_namespaces(self, selected_region):
+    def get_cloud_function_namespaces(self, selected_region=''):
         """returns relevant metadata on existing namespaces within a given region."""
         msg = f"Obtaining Cloud Function namespaces in {selected_region}" if selected_region \
             else "Obtaining all existing Cloud Function namespaces"

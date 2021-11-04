@@ -1,4 +1,3 @@
-import json
 import sys
 from typing import Any, Dict
 import ibm_boto3
@@ -9,8 +8,7 @@ from lithopscloud.modules.config_builder import ConfigBuilder
 from lithopscloud.modules.utils import free_dialog, CACHE, color_msg, Color, NEW_INSTANCE, retry_on_except
 from lithopscloud.modules.utils import inquire_user
 
-BUCKET_REGIONS = []
-
+BUCKET_REGIONS = []  # regions in which bucket can be created
 
 class CosConfig(ConfigBuilder):
 
@@ -29,10 +27,8 @@ class CosConfig(ConfigBuilder):
 
         print("Obtaining existing COS instances...")
 
-        resource_instances = self.get_resources()
-
         selected_storage_name = inquire_user('Please choose a COS instance',
-                                             get_cos_instances(resource_instances),
+                                             get_cos_instances(self.get_resources()),
                                              create_new_instance=NEW_INSTANCE + ' COS instance')
 
         if NEW_INSTANCE in selected_storage_name:
@@ -140,7 +136,6 @@ def get_cos_instances(resource_instances):
     storage_instances = []
     for resource in resource_instances:
         if 'cloud-object-storage' in resource['id']:
-            # storage_instances.append(resource['name'])
             storage_instances.append({"name": resource['name'], "id": resource['id']})
 
     return storage_instances

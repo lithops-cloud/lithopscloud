@@ -11,6 +11,13 @@ import yaml
 from inquirer import errors
 
 CACHE = {}
+ARG_STATUS = Enum('STATUS', 'VALID INVALID MISSING')  # variable possible status.
+
+class MSG_STATUS(Enum):
+    ERROR = '[ERROR]'
+    WARNING = '[WARNING]'
+    SUCCESS = '[SUCCESS]'
+
 NEW_INSTANCE = 'Create a new'  # guaranteed substring in every 'create new instance' option prompted to user.
 
 
@@ -215,28 +222,6 @@ def retry_on_except(retries, sleep_duration, error_msg='', default=None):
     return retry_on_except_warpper
 
 
-def test_config_file(config_file_path):
-    """testing provided config file with a simple test  """
-    confirm_test_run = True
-    lithops_installed = importlib.util.find_spec("lithops")
-    if not lithops_installed:
-        print(color_msg("Lithops must be installed to ", color=Color.RED))
-
-    with open(config_file_path) as config_file:
-        base_config = yaml.safe_load(config_file)
-
-    if {'ibm_vpc', 'provider'}.intersection(base_config.keys()):
-        confirm_test_run = get_confirmation(
-            color_msg("*Warning* it will take a considerable amount of time to initialize the virtual machine. "
-                      "Continue?", color=Color.RED))
-
-    if 'code_engine' in base_config.keys():
-        run_cmd(f'lithops clean -c {config_file_path} ')
-
-    if confirm_test_run:
-        run_cmd(f"lithops test -c {config_file_path}")
-
-
 def run_cmd(cmd):
     """runs a command via cli while constantly printing the output from the read pipe"""
 
@@ -248,7 +233,7 @@ def run_cmd(cmd):
     process.wait()
 
 
-def verify_paths(input_path, output_path):
+def verify_paths(input_path, output_path, verify_config=False):
     """:returns a valid input and output path files, in accordance with provided paths.
         if a given path is invalid, and user is unable to rectify, a default path will be chosen in its stead. """
 
@@ -278,12 +263,13 @@ def verify_paths(input_path, output_path):
             else:
                 path = free_dialog(request)['answer']
 
-    input_path = _prompt_user(input_path, '', _is_valid_input_path,
-                              "Provide a path to your existing config file, or leave blank to configure from template",
-                              'Default input file was chosen\n')
+    if not verify_config:
+        input_path = _prompt_user(input_path, '', _is_valid_input_path,
+                                  "Provide a path to your existing config file, or leave blank to configure from template",
+                                  'Using default input file\n')
     output_path = _prompt_user(output_path, tempfile.mkstemp(suffix='.yaml')[1], _is_valid_output_path,
                                "Provide a custom path for your config file, or leave blank for default output location",
-                               'Default output path was chosen\n')
+                               'Using default output path\n')
     return input_path, output_path
 
 
