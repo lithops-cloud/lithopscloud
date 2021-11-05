@@ -4,6 +4,8 @@ import ibm_botocore
 from ibm_botocore.credentials import DefaultTokenManager
 from ibm_botocore.exceptions import ClientError, CredentialRetrievalError
 from ibm_botocore.client import Config
+
+from lithopscloud.modules.api_key import ApiKeyConfig
 from lithopscloud.modules.utils import ARG_STATUS, color_msg, Color, inquire_user, NEW_INSTANCE, get_confirmation
 from lithopscloud.modules.cos import init_cos_region_list, BUCKET_REGIONS, get_cos_instances, CosConfig
 
@@ -130,7 +132,6 @@ def verify(base_config):
                 output['ibm_cos']['region'] = region
                 return output
 
-
     chosen_key, chosen_key_type, api_key, access_key, secret_key = _pick_viable_key()
     endpoint, region = _verify_region_endpoint()
 
@@ -144,7 +145,6 @@ def verify(base_config):
         print(color_msg('Either an IAmApiKey, COS apiKey, or HMAC credentials must be provided', Color.RED))
 
     return reconfigure(base_config, output)
-
 
 
 def test_apikey_and_bucket(key, key_type: KEY_TYPE, endpoint=None, bucket=None):
@@ -210,15 +210,17 @@ def reconfigure(base_config, output):
     """Directs the user to repeat the reconfiguration process and returns the recreated cos configuration"""
 
     iamapikey = base_config['ibm']['iam_api_key']
-    if iamapikey and iamapikey != ARG_STATUS.INVALID:
-        should_reconfigure = get_confirmation(color_msg("Unable to configure the COS segment due to invalid critical fields"
-                                                 "Would you like to reconfigure this segment?", Color.RED))['answer']
-        if should_reconfigure:
 
-            cos_config = CosConfig(base_config)
-            new_base_config = cos_config.run()
-            output['ibm_cos'] = new_base_config['ibm_cos']
-            return output
+    should_reconfigure = get_confirmation(color_msg("Unable to configure the COS segment due to invalid critical field(s)."
+                                             " Would you like to reconfigure this segment?", Color.RED))['answer']
+    if should_reconfigure:
+        if not iamapikey or iamapikey == ARG_STATUS.INVALID:
+            base_config['ibm']['iam_api_key'] = ''
+            ApiKeyConfig(base_config).run()  # sets base_config's iam_api_key value
+
+        CosConfig(base_config).run()  # sets base_config's cos segment
+        output['ibm_cos'] = base_config['ibm_cos']
+        return output
 
 
 

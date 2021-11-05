@@ -2,6 +2,7 @@ import ast
 import base64
 import http.client
 
+from lithopscloud.modules.api_key import ApiKeyConfig
 from lithopscloud.modules.cloud_functions import CloudFunction
 from lithopscloud.modules.cloud_functions.cloud_function import CF_REGIONS
 from lithopscloud.modules.utils import color_msg, ARG_STATUS, Color, inquire_user, get_confirmation
@@ -40,7 +41,7 @@ def verify(base_config):
 
                 if required_params['namespace']:
                     if required_params['namespace'] != namespace:
-                        print(color_msg(f"Cloud Foundry api key provided belongs to the namespace '{required_params['namespace']}' rather than '{namespace}'",Color.RED))
+                        print(color_msg(f"Cloud Foundry api key provided belongs to the namespace '{namespace}' rather than '{required_params['namespace']}'",Color.RED))
 
             else:
                 api_key = ARG_STATUS.INVALID
@@ -140,12 +141,15 @@ def reconfigure(base_config, output):
     """Directs the user to repeat the reconfiguration process and returns the recreated ibm_cf configuration"""
 
     iamapikey = base_config['ibm']['iam_api_key']
-    if iamapikey and iamapikey != ARG_STATUS.INVALID:
-        should_reconfigure = get_confirmation(color_msg("Unable to configure the Cloud Functions segment due to invalid critical fields"
-                                                 "Would you like to reconfigure this segment?", Color.RED))['answer']
-        if should_reconfigure:
-            base_config['ibm_cf']['namespace_id'] = ''
-            cf = CloudFunction(base_config)
-            new_config = cf.run()
-            output['ibm_cf'] = new_config['ibm_cf']
-            return output
+
+    should_reconfigure = get_confirmation(color_msg("Unable to configure the Cloud Functions segment due to invalid critical fields"
+                                             "Would you like to reconfigure this segment?", Color.RED))['answer']
+    if should_reconfigure:
+        if not iamapikey or iamapikey == ARG_STATUS.INVALID:
+            base_config['ibm']['iam_api_key'] = ''
+            ApiKeyConfig(base_config).run()  # sets base_config's iam_api_key value
+
+        base_config['ibm_cf']['namespace_id'] = ''
+        CloudFunction(base_config).run()  # sets base_config's ibm_cf segment
+        output['ibm_cf'] = base_config['ibm_cf']
+        return output
