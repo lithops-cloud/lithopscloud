@@ -80,9 +80,8 @@ class SshKeyConfig(ConfigBuilder):
         self.base_config = base_config
 
     def _validate_keypair(self, answers, current):
-#        breakpoint()
         if not current or not os.path.exists(os.path.abspath(os.path.expanduser(current))):
-        raise errors.ValidationError(
+            raise errors.ValidationError(
             '', reason=f"File {current} doesn't exist")
 
         public_res = self.ibm_vpc_client.get_key(self.ssh_key_id).get_result()['public_key'].split(' ')[1]
