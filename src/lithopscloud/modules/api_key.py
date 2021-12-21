@@ -37,5 +37,5 @@ def verify_iam_api_key(answers,apikey):
     try:
         iam_identity_service.get_api_keys_details(iam_api_key=apikey)
     except ibm_cloud_sdk_core.api_exception.ApiException:
-        raise errors.ValidationError('', reason=color_msg("No ApiKey matching the given value was found.", color=Color.RED))
+        raise errors.ValidationError('', reason=color_msg("No IAmApiKey matching the given value was found.", Color.RED))
     return True

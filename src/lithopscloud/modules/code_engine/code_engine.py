@@ -40,10 +40,11 @@ class CodeEngine(ConfigBuilder):
         return self.base_config
 
     def get_project_namespace(self, project_instance):
-        """returns the the namespace of a previously chosen project (identified by its guid)"""
+        """returns the the namespace of a previously chosen project (identified by its guid)
+        :param project_instance: a dict containing the name, region and guid of a project"""
 
         @spinner
-        @retry_on_except(retries=10, sleep_duration=7,error_msg="IBM Cloud Code Engine is currently unavailable. "
+        @retry_on_except(retries=10, sleep_duration=7, error_msg="IBM Cloud Code Engine is currently unavailable. "
                                                                 "Your request could not be processed. "
                                                                 "Please wait a few minutes and try again.  ")
         def _get_kubeconfig_response():
@@ -71,10 +72,11 @@ class CodeEngine(ConfigBuilder):
         cluster_namespace = dict_struct['contexts'][0]['context']['namespace']
         return cluster_namespace
 
-    def get_ce_instances(self):
+    def get_ce_instances(self, verbose=True):
         """return available code engine instances, along with their corresponding region and group user id."""
 
-        print("Obtaining all existing Code Engine projects...\n")
+        if verbose:
+            print("Obtaining all existing Code Engine projects...\n")
         ce_instances = []
 
         res_group_objects = self.get_resources()

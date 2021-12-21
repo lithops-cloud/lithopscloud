@@ -34,6 +34,11 @@ class ConfigBuilder:
     def __init__(self, base_config: Dict[str, Any]) -> None:
 
         self.defaults = {}
+        if not ConfigBuilder.iam_api_key:
+            if 'ibm' in base_config and 'iam_api_key' in base_config['ibm']:
+                ConfigBuilder.iam_api_key = base_config['ibm']['iam_api_key']
+            elif 'provider' in base_config and 'iam_api_key' in base_config['provider']:
+                ConfigBuilder.iam_api_key = base_config['provider']['iam_api_key']
 
         if not ConfigBuilder.ibm_vpc_client and ConfigBuilder.iam_api_key:
             authenticator = IAMAuthenticator(ConfigBuilder.iam_api_key)
@@ -113,6 +118,9 @@ class ConfigBuilder:
 
         iam_token_manager = IAMTokenManager(apikey=self.base_config['ibm']['iam_api_key'])
         return iam_token_manager.get_token()
+
+    def verify(self, base_config):
+        pass
 
 
 class Spinner(threading.Thread):
