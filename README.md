@@ -28,7 +28,7 @@ Get a short description of the available flags via ```lithopscloud --help```
  | iam-api-key   | |yes|IBM Cloud API key. To generate a new API Key, adhere to the following [guide](https://www.ibm.com/docs/en/spectrumvirtualizecl/8.1.3?topic=installing-creating-api-key)
  | input-file    |<compute_backend>/defaults.py| no | Existing config file to be used as a template in the configuration process |
  | output-path   |A randomly generated path to a randomly named yaml file | no |A custom location the config file will be written to |
- | verify-config <img width=125/>| | no |Verifies the integrity of an existing config file and outputs a usable config file based on it |
+ | verify-config <img width=125/>| | no |Verifies the integrity of an existing config file and outputs a usable config file based on it. Currently doesn't support gen2 backends. 
  | version       | | no |Returns lithopscloud's package version|
 
 <br/>
@@ -38,6 +38,7 @@ Using the ```verify-config``` option enables verification of additional valid wa
 left unchecked. This mode scans for any possible subset of valid parameters and extract them to output a new 
 lithops config file (e.g., verify cos configured by HMAC credentials).
 To utilize simply run ```lithopscloud --verify_config CONFIG_FILE_PATH -o OUTPUT_FILE_PATH```
+<br/> Please note that this feature doesn't currently support the verification of gen2 backends. 
 
 ## Supported backends:
 <table>
