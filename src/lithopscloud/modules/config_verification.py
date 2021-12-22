@@ -53,7 +53,7 @@ def get_backends(base_config):
             chosen_compute = base_config['lithops'].get('backend')
             if chosen_compute not in [compute['config_title'] for compute in CONFIGURABLE_COMPUTE]:
                 print(color_msg(f"{MSG_STATUS.ERROR.value} chosen compute backend isn't configurable at this point in time."
-                                f" Available compute backends: {[backend['config_title'] for backend in CONFIGURABLE_COMPUTE]}",Color.RED))
+                                f"\nAvailable compute backends: {[backend['config_title'] for backend in CONFIGURABLE_COMPUTE]}",Color.RED))
                 exit(1)
         else:
             print(color_msg("Missing chosen compute backend under lithops->backend",Color.RED))
@@ -63,7 +63,7 @@ def get_backends(base_config):
             chosen_storage = base_config['lithops'].get('storage')
             if chosen_storage not in [storage['config_title'] for storage in CONFIGURABLE_STORAGE]:
                 print(color_msg(f"{MSG_STATUS.ERROR.value} chosen storage backend isn't configurable at this point in time."
-                                f"Available storage backends: {[backend['config_title'] for backend in CONFIGURABLE_STORAGE]}",Color.RED))
+                                f"\nAvailable storage backends: {[backend['config_title'] for backend in CONFIGURABLE_STORAGE]}",Color.RED))
                 exit(1)
         else:
             print(color_msg("Missing chosen storage backend under lithops->storage", Color.RED))

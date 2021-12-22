@@ -37,7 +37,7 @@ Get a short description of the available flags via ```lithopscloud --help```
 Using the ```verify-config``` option enables verification of additional valid ways of configuration, that otherwise 
 left unchecked. This mode scans for any possible subset of valid parameters and extract them to output a new 
 lithops config file (e.g., verify cos configured by HMAC credentials).
-To utilize simply run ```lithopscloud --verify_config CONFIG_FILE_PATH -o OUTPUT_FILE_PATH```
+To utilize simply run ```lithopscloud --verify-config CONFIG_FILE_PATH -o OUTPUT_FILE_PATH```
 <br/> Please note that this feature doesn't currently support the verification of gen2 backends. 
 
 ## Supported backends:
