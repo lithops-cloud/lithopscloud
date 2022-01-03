@@ -4,6 +4,12 @@ Lithopscloud is a CLI tool that greatly simplifies user experience by generating
 
 ## Setup
 
+The tool been mostly tested with Ubuntu 18.04/20.04, but should work with most Linux systems
+Requirements: `ssh-keygen` utility installed:
+```
+sudo apt install openssh-client
+```
+
 Install `lithopscloud` from pip repository
 
 ```
