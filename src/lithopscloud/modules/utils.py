@@ -140,7 +140,7 @@ def get_region_by_endpoint(endpoint):
     return re.search('//(.+?).iaas.cloud.ibm.com', endpoint).group(1)
 
 
-def find_default(template_dict, objects, name=None, id=None):
+def find_default(template_dict, objects, name=None, id=None, substring=False):
     val = None
     for k, v in template_dict.items():
         if isinstance(v, dict):
@@ -156,7 +156,10 @@ def find_default(template_dict, objects, name=None, id=None):
                     val = v
 
             if val:
-                obj = next((obj for obj in objects if obj[key] == val), None)
+                if not substring:
+                    obj = next((obj for obj in objects if obj[key] == val), None)
+                else:
+                    obj = next((obj for obj in objects if val in obj[key]), None)
                 if obj:
                     return obj['name']
 
