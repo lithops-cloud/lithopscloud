@@ -19,7 +19,11 @@ class VPCConfig(ConfigBuilder):
 
     @update_decorator
     def run(self) -> Dict[str, Any]:
-        region = get_region_by_endpoint(self.ibm_vpc_client.service_url)
+        try:
+            region = get_region_by_endpoint(self.ibm_vpc_client.service_url)
+        except Exception:
+            region = ConfigBuilder.region
+
         vpc_obj, zone_obj = self._select_vpc(self.base_config, region)
 
         if not vpc_obj:

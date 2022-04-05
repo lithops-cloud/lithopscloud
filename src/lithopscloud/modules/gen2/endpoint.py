@@ -13,7 +13,7 @@ class EndpointConfig(ConfigBuilder):
 
         @spinner
         def get_regions_objects():
-            return self.ibm_vpc_client.list_regions().get_result()['regions']
+            return ConfigBuilder.ibm_vpc_client.list_regions().get_result()['regions']
 
         regions_objects = get_regions_objects()
         
@@ -22,5 +22,6 @@ class EndpointConfig(ConfigBuilder):
 
         # update global ibm_vpc_client to selected endpoint
         ConfigBuilder.ibm_vpc_client.set_service_url(region_obj['endpoint'] + '/v1')
+        ConfigBuilder.region = region_obj['name']
         
         return region_obj['endpoint']

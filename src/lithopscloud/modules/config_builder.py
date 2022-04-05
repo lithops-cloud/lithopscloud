@@ -29,7 +29,7 @@ class ConfigBuilder:
     """
     Interface for building IBM Cloud config files for Lithops and Ray
     """
-    iam_api_key, ibm_vpc_client, resource_service_client, resource_controller_service, compute_iam_endpoint, cos_iam_api_key = None, None, None, None, None, None
+    iam_api_key, ibm_vpc_client, resource_service_client, resource_controller_service, compute_iam_endpoint, cos_iam_api_key, region = None, None, None, None, None, None, None
 
     def __init__(self, base_config: Dict[str, Any]) -> None:
 
@@ -41,6 +41,7 @@ class ConfigBuilder:
                 ConfigBuilder.iam_api_key = base_config['provider']['iam_api_key']
 
         if not ConfigBuilder.ibm_vpc_client and ConfigBuilder.iam_api_key:
+#            breakpoint()
             authenticator = IAMAuthenticator(ConfigBuilder.iam_api_key, url=ConfigBuilder.compute_iam_endpoint)
             ConfigBuilder.ibm_vpc_client = VpcV1(
                 '2021-01-19', authenticator=authenticator)

@@ -32,6 +32,7 @@ class CosConfig(ConfigBuilder):
 
         print("Obtaining existing COS instances...")
 
+        breakpoint()
         selected_storage_name = inquire_user('Please choose a COS instance',
                                              get_cos_instances(self.get_resources()),
                                              create_new_instance=NEW_INSTANCE + ' COS instance')

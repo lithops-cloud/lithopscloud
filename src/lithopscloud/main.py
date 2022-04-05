@@ -57,7 +57,7 @@ def select_backend(input_file):
 
     return base_config, modules
 
-def validate_api_keys(iam_api_key, compute_iam_endpoint, cos_iam_api_key):
+def validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key):
     # ugly hack to support case when api_key been provided by user as parameter to lithopscloud
     # TODO: consider better approach
     # we know that the first module has to be API_KEY module
@@ -68,6 +68,7 @@ def validate_api_keys(iam_api_key, compute_iam_endpoint, cos_iam_api_key):
                                                   cos_iam_api_key=cos_iam_api_key)
 
     modules = modules[1:]
+    return base_config, modules
     
 @click.command()
 @click.option('--output-file', '-o', help='Output filename to save configurations')
@@ -78,7 +79,8 @@ def validate_api_keys(iam_api_key, compute_iam_endpoint, cos_iam_api_key):
                                       " Outputs a usable config file if possible.")
 @click.option('--compute-iam-endpoint', help='IAM endpoint url used for compute instead of default https://iam.cloud.ibm.com')
 @click.option('--cos-iam-api-key', help='IAM_API_KEY used to communicate with cos separately')
-def builder(iam_api_key, output_file, input_file, version, verify_config, compute_iam_endpoint, cos_iam_api_key):
+@click.option('--endpoint', help='IBM Cloud API endpoint')
+def builder(iam_api_key, output_file, input_file, version, verify_config, compute_iam_endpoint, cos_iam_api_key, endpoint):
     if version:
         print(f"{pkg_resources.get_distribution('lithopscloud').project_name} "
               f"{pkg_resources.get_distribution('lithopscloud').version}")
@@ -93,7 +95,10 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
         exit(0)
 
     base_config, modules = select_backend(input_file)
-    base_config, modules = validate_api_keys(iam_api_key, compute_iam_endpoint, cos_iam_api_key)
+    base_config, modules = validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key)
+
+    if endpoint:
+        base_config['ibm_vpc']['endpoint'] = endpoint
 
     for module in modules:
         next_module = module(base_config)

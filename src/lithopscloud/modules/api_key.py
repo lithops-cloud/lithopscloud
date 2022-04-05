@@ -49,7 +49,7 @@ class ApiKeyConfig(ConfigBuilder):
 def verify_iam_api_key(answers,apikey):
     """Terminates the config tool if no IAM_API_KEY matching the provided value exists"""
 
-    iam_identity_service = IamIdentityV1(authenticator=IAMAuthenticator(apikey), url=ConfigBuilder.compute_iam_endpoint)
+    iam_identity_service = IamIdentityV1(authenticator=IAMAuthenticator(apikey, url=ConfigBuilder.compute_iam_endpoint))
     try:
         iam_identity_service.get_api_keys_details(iam_api_key=apikey)
     except ibm_cloud_sdk_core.api_exception.ApiException:
