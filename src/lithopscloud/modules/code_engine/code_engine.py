@@ -50,10 +50,14 @@ class CodeEngine(ConfigBuilder):
         def _get_kubeconfig_response():
             return ce_client.get_kubeconfig(x_delegated_refresh_token=delegated_refresh_token, id=project_instance['guid'])
 
-        ce_client = IbmCloudCodeEngineV1(authenticator=IAMAuthenticator(apikey=self.base_config['ibm']['iam_api_key']))
+        ce_client = IbmCloudCodeEngineV1(authenticator=IAMAuthenticator(apikey=self.base_config['ibm']['iam_api_key'], url=ConfigBuilder.compute_iam_endpoint))
         ce_client.set_service_url(f"https://api.{project_instance['region']}.codeengine.cloud.ibm.com/api/v1")
 
-        iam_response = requests.post('https://iam.cloud.ibm.com/identity/token',
+        iam_token_url = 'https://iam.cloud.ibm.com/identity/token'
+        if ConfigBuilder.compute_iam_endpoint:
+            iam_token_url = ConfigBuilder.compute_iam_endpoint + '/identity/token'
+            
+        iam_response = requests.post(iam_token_url,
                                      headers={'Content-Type': 'application/x-www-form-urlencoded'},
                                      data={
                                          'grant_type': 'urn:ibm:params:oauth:grant-type:apikey',

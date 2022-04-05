@@ -29,7 +29,7 @@ class ConfigBuilder:
     """
     Interface for building IBM Cloud config files for Lithops and Ray
     """
-    iam_api_key, ibm_vpc_client, resource_service_client, resource_controller_service = None, None, None, None
+    iam_api_key, ibm_vpc_client, resource_service_client, resource_controller_service, compute_iam_endpoint, cos_iam_api_key = None, None, None, None, None, None
 
     def __init__(self, base_config: Dict[str, Any]) -> None:
 
@@ -41,7 +41,7 @@ class ConfigBuilder:
                 ConfigBuilder.iam_api_key = base_config['provider']['iam_api_key']
 
         if not ConfigBuilder.ibm_vpc_client and ConfigBuilder.iam_api_key:
-            authenticator = IAMAuthenticator(ConfigBuilder.iam_api_key)
+            authenticator = IAMAuthenticator(ConfigBuilder.iam_api_key, url=ConfigBuilder.compute_iam_endpoint)
             ConfigBuilder.ibm_vpc_client = VpcV1(
                 '2021-01-19', authenticator=authenticator)
             ConfigBuilder.resource_service_client = ResourceManagerV2(
@@ -116,7 +116,7 @@ class ConfigBuilder:
     def get_oauth_token(self):
         """:returns a temporary authentication token required by various IBM cloud APIs """
 
-        iam_token_manager = IAMTokenManager(apikey=self.base_config['ibm']['iam_api_key'])
+        iam_token_manager = IAMTokenManager(apikey=self.base_config['ibm']['iam_api_key'], url=ConfigBuilder.compute_iam_endpoint)
         return iam_token_manager.get_token()
 
     def verify(self, base_config):

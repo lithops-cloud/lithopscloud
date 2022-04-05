@@ -11,7 +11,7 @@ LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops Gen2', 'Li
                                                              'Lithops Code Engine', 'Ray Gen2', 'Local Host'
 
 
-def select_backend(input_file, iam_api_key):
+def select_backend(input_file):
     # select backend
     backends = [
         {'name': LITHOPS_GEN2, 'path': 'gen2.lithops'},
@@ -55,19 +55,20 @@ def select_backend(input_file, iam_api_key):
     # now find the right modules
     modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
 
-    if iam_api_key:
-        # ugly hack to support case when api_key been provided by user as parameter to lithopscloud
-        # TODO: consider better approach
-        # we know that the first module has to be API_KEY module
-        # we invoke the first module with provided api key and pop it from list
-        api_key_module = modules[0]
-        base_config = api_key_module(base_config).run(api_key=iam_api_key)
-
-        modules = modules[1:]
-
     return base_config, modules
 
+def validate_api_keys(iam_api_key, compute_iam_endpoint, cos_iam_api_key):
+    # ugly hack to support case when api_key been provided by user as parameter to lithopscloud
+    # TODO: consider better approach
+    # we know that the first module has to be API_KEY module
+    # we invoke the first module with provided api key and pop it from list
+    api_key_module = modules[0]
+    base_config = api_key_module(base_config).run(api_key=iam_api_key,
+                                                  compute_iam_endpoint=compute_iam_endpoint,
+                                                  cos_iam_api_key=cos_iam_api_key)
 
+    modules = modules[1:]
+    
 @click.command()
 @click.option('--output-file', '-o', help='Output filename to save configurations')
 @click.option('--input-file', '-i', help=f'Template for the new configuration')
@@ -75,7 +76,9 @@ def select_backend(input_file, iam_api_key):
 @click.option('--version', '-v', help=f'Get package version', is_flag=True)
 @click.option('--verify-config', help="Path to a lithops config file you'd wish to verify."
                                       " Outputs a usable config file if possible.")
-def builder(iam_api_key, output_file, input_file, version, verify_config):
+@click.option('--compute-iam-endpoint', help='IAM endpoint url used for compute instead of default https://iam.cloud.ibm.com')
+@click.option('--cos-iam-api-key', help='IAM_API_KEY used to communicate with cos separately')
+def builder(iam_api_key, output_file, input_file, version, verify_config, compute_iam_endpoint, cos_iam_api_key):
     if version:
         print(f"{pkg_resources.get_distribution('lithopscloud').project_name} "
               f"{pkg_resources.get_distribution('lithopscloud').version}")
@@ -89,7 +92,8 @@ def builder(iam_api_key, output_file, input_file, version, verify_config):
         verify_config_file(verify_config, output_file)
         exit(0)
 
-    base_config, modules = select_backend(input_file, iam_api_key)
+    base_config, modules = select_backend(input_file)
+    base_config, modules = validate_api_keys(iam_api_key, compute_iam_endpoint, cos_iam_api_key)
 
     for module in modules:
         next_module = module(base_config)

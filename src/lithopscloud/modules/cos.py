@@ -14,8 +14,13 @@ class CosConfig(ConfigBuilder):
 
     def run(self) -> Dict[str, Any]:
         def _init_boto3_client(region):
+            if self.base_config.get('ibm_cos') and self.base_config['ibm_cos'].get('iam_api_key'):
+                cos_iam_api_key = self.base_config['ibm_cos']['iam_api_key']
+            else:
+                cos_iam_api_key = self.base_config['ibm']['iam_api_key']
+                    
             return ibm_boto3.client(service_name='s3',
-                                    ibm_api_key_id=self.base_config['ibm']['iam_api_key'],
+                                    ibm_api_key_id=cos_iam_api_key,
                                     ibm_auth_endpoint="https://iam.ng.bluemix.net/oidc/token",
                                     config=Config(signature_version='oauth'),
                                     endpoint_url=f'https://s3.{region}.cloud-object-storage.appdomain.cloud')
