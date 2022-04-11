@@ -41,7 +41,6 @@ class ConfigBuilder:
                 ConfigBuilder.iam_api_key = base_config['provider']['iam_api_key']
 
         if not ConfigBuilder.ibm_vpc_client and ConfigBuilder.iam_api_key:
-#            breakpoint()
             authenticator = IAMAuthenticator(ConfigBuilder.iam_api_key, url=ConfigBuilder.compute_iam_endpoint)
             ConfigBuilder.ibm_vpc_client = VpcV1(
                 '2021-01-19', authenticator=authenticator)
@@ -50,11 +49,16 @@ class ConfigBuilder:
             ConfigBuilder.resource_controller_service = ResourceControllerV2(
                 authenticator=authenticator)
 
-        self.ibm_vpc_client = ConfigBuilder.ibm_vpc_client
-        self.resource_service_client = ConfigBuilder.resource_service_client
-        self.resource_controller_service = ConfigBuilder.resource_controller_service
+        self.init_clients(ConfigBuilder.iam_api_key, ConfigBuilder.compute_iam_endpoint)
 
         self.base_config = base_config
+
+    def init_clients(self, iam_api_key, iam_endpoint=None):
+        authenticator = IAMAuthenticator(iam_api_key, url=iam_endpoint)
+        self.ibm_vpc_client = ConfigBuilder.ibm_vpc_client
+        self.resource_service_client = ResourceManagerV2(authenticator=authenticator)
+        self.resource_controller_service = ResourceControllerV2(authenticator=authenticator)
+
 
     """Interacts with user to get all required parameters"""
 

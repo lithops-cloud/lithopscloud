@@ -16,8 +16,9 @@ class LithopsEndpointConfig(EndpointConfig):
         try:
             # when endpoint was provided directly by user instead of selecting it
             # we just set it
-            ConfigBuilder.ibm_vpc_client.set_service_url(base_endpoint + '/v1')
-            self.ibm_vpc_client.set_service_url(base_endpoint + '/v1')
+            if base_endpoint:
+                ConfigBuilder.ibm_vpc_client.set_service_url(base_endpoint + '/v1')
+                self.ibm_vpc_client.set_service_url(base_endpoint + '/v1')
         
             self.defaults['region'] = get_region_by_endpoint(
                 base_endpoint) if base_endpoint else None

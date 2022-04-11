@@ -16,6 +16,8 @@ class CosConfig(ConfigBuilder):
         def _init_boto3_client(region):
             if self.base_config.get('ibm_cos') and self.base_config['ibm_cos'].get('iam_api_key'):
                 cos_iam_api_key = self.base_config['ibm_cos']['iam_api_key']
+                del CACHE['resource_group_id']
+                self.init_clients(cos_iam_api_key)
             else:
                 cos_iam_api_key = self.base_config['ibm']['iam_api_key']
                     
@@ -32,7 +34,6 @@ class CosConfig(ConfigBuilder):
 
         print("Obtaining existing COS instances...")
 
-        breakpoint()
         selected_storage_name = inquire_user('Please choose a COS instance',
                                              get_cos_instances(self.get_resources()),
                                              create_new_instance=NEW_INSTANCE + ' COS instance')
@@ -45,7 +46,7 @@ class CosConfig(ConfigBuilder):
 
         client_response = s3_client.list_buckets(IBMServiceInstanceId=ibm_service_instance_id)
         # prompt user to choose a bucket from buckets available within chosen cos instance
-        default_bucket = self.base_config['ibm_cos']['storage_bucket'] if self.base_config.get('ibm_cos') else None
+        default_bucket = self.base_config['ibm_cos'].get('storage_bucket') if self.base_config.get('ibm_cos') else None
         chosen_bucket = inquire_user('Please choose a bucket',  client_response['Buckets'],
                                      create_new_instance=NEW_INSTANCE + ' bucket',
                                      choice_key='Name',
@@ -84,7 +85,7 @@ class CosConfig(ConfigBuilder):
 
             chosen_bucket = create_bucket(s3_client, ibm_service_instance_id)
 
-        self.base_config['ibm_cos'] = {'storage_bucket': chosen_bucket, 'region': bucket_location}
+        self.base_config['ibm_cos'].update({'storage_bucket': chosen_bucket, 'region': bucket_location})
         self.base_config['lithops']['storage'] = 'ibm_cos'
 
         print(color_msg("\nIBM Cloud Object Storage was configured successfully", color=Color.LIGHTGREEN))
