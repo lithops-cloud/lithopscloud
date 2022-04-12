@@ -298,3 +298,28 @@ class VPCConfig(ConfigBuilder):
         CACHE['resource_group_id'] = resource_group['id']
         
         return vpc_obj, zone_obj
+
+    def verify(self, base_config):
+        region = None
+        try:
+            region = get_region_by_endpoint(self.ibm_vpc_client.service_url)
+        except Exception:
+            region = ConfigBuilder.region
+
+        if not self.ibm_vpc_client.get_region_zone(region_name=region, name=self.defaults['zone_name']):
+            raise Exception(f"failed to find zone {self.defaults['zone_name']}")
+        
+        if not self.resource_service_client.get_resource_group(id=self.defaults['resource_group_id']):
+            raise Exception(f"failed to find resource group id {self.defaults['resource_group_id']}")
+            
+        if not self.ibm_vpc_client.get_vpc(id=self.defaults['vpc_id']):
+            raise Exception(f"failed to find vpc id {self.defaults['vpc_id']}")
+
+        if not self.ibm_vpc_client.get_security_group(id=self.defaults['security_group_id']):
+            raise Exception(f"failed to find security group id {self.defaults['security_group_id']}")
+        
+        if not self.ibm_vpc_client.get_subnet(id=self.defaults['subnet_id']):
+            raise Exception(f"failed to find subnet id {self.defaults['subnet_id']}")
+        
+        
+          

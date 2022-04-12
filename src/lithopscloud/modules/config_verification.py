@@ -8,10 +8,38 @@ from lithopscloud.modules.utils import color_msg, Color, ARG_STATUS, MSG_STATUS,
 # TODO: change ibm_cos path to cos after cos-package name changes to cos
 CONFIGURABLE_STORAGE = [{'config_title': 'ibm_cos', 'path': 'cos-package'},
                         {'config_title': 'localhost', 'path': 'local_host'}]
-CONFIGURABLE_COMPUTE = [{'config_title': 'ibm_cf', 'path': 'cloud_functions'},
+CONFIGURABLE_COMPUTE = [{'config_title': 'ibm_vpc', 'path': 'gen2'},
+                        {'config_title': 'ibm_cf', 'path': 'cloud_functions'},
                         {'config_title': 'code_engine', 'path': 'code_engine'},
                         {'config_title': 'localhost', 'path': 'local_host'}]
 
+
+def verify_config(base_config):
+    verify_iamapikey(base_config)  # verify once a commonly shared resource in various backends
+
+    chosen_compute, chosen_storage = get_backends(base_config)
+    output_config = {'lithops': base_config['lithops']}
+
+    storage_path = next((x['path'] for x in CONFIGURABLE_STORAGE if x['config_title'] == chosen_storage))
+    compute_path = next((x['path'] for x in CONFIGURABLE_COMPUTE if x['config_title'] == chosen_compute))
+
+    for path in [storage_path, compute_path]:
+        verify_module = importlib.import_module(f"lithopscloud.modules.{path}.verify")
+        verify_func = verify_module.__getattribute__('verify')
+        res = verify_func(base_config)
+        if res:
+            output_config.update(res)
+        else:
+            print(color_msg(f"{MSG_STATUS.ERROR.value} Couldn't produce a valid lithops config file from input", Color.RED))
+            exit(1)
+
+    with open(output_file, 'w') as outfile:
+        yaml.dump(output_config, outfile, default_flow_style=False)
+
+    print("\n\n=================================================")
+    print(color_msg(f"Extracted config file: {output_file}", color=Color.LIGHTGREEN))
+    print("=================================================")
+    
 
 def verify_config_file(config_file, output_file):
     """executed via cli flag 'verify-config', this function outputs error messages based on lacking or invalid values

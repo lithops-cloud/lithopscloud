@@ -136,6 +136,10 @@ def generate_config(backend_name, iam_api_key,
     
     # now find the right modules
     modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
+    for module in modules:
+        next_module = module(base_config)
+        base_config = next_module.verify(base_config)
+
 
     if not iam_api_key:
         error('missing iam api key')

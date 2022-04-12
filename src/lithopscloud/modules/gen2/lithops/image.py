@@ -12,8 +12,3 @@ class LithopsImageConfig(ImageConfig):
    def update_config(self, image_id, minimum_provisioned_size):
       self.base_config['ibm_vpc']['image_id'] = image_id
       self.base_config['ibm_vpc']['boot_volume_capacity'] = minimum_provisioned_size
-   
-   def verify(self, base_config):
-      image_id = self.base_config['ibm_vpc']['image_id']
-      image_objects = self.ibm_vpc_client.list_images().get_result()['images']
-      find_obj(image_objects, obj_id=image_id)

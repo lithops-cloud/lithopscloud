@@ -126,3 +126,11 @@ class SshKeyConfig(ConfigBuilder):
 
         # currently the user is hardcoded to root
         return ssh_key_id, ssh_key_path, 'root'
+
+    def verify(self, base_config):
+        public_res = self.ibm_vpc_client.get_key(self.defaults['key_id']).get_result()['public_key'].split(' ')[1]
+        private_res = subprocess.getoutput([f"ssh-keygen -y -f {self.defaults['ssh_key_filename']} | cut -d' ' -f 2"])
+
+        if not public_res == private_res:
+            raise errors.ValidationError(
+            '', reason=f"Private ssh key {self.defaults['ssh_key_filename']} and public key {self.defaults['key_id']} are not a pair")

@@ -25,3 +25,6 @@ class EndpointConfig(ConfigBuilder):
         ConfigBuilder.region = region_obj['name']
         
         return region_obj['endpoint']
+
+    def verify(self, base_config):
+        self.ibm_vpc_client.list_regions()
