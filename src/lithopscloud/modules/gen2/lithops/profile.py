@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from lithopscloud.modules.gen2.profile import ProfileConfig
+from lithopscloud.modules.utils import find_default
 
 
 class LithopsProfileConfig(ProfileConfig):
@@ -11,3 +12,11 @@ class LithopsProfileConfig(ProfileConfig):
     
    def update_config(self, profile_name):
       self.base_config['ibm_vpc']['profile_name'] = profile_name
+
+
+   def verify(self, base_config):
+      profile_name = base_config['ibm_vpc']['profile_name']
+      instance_profile_objects = self.ibm_vpc_client.list_instance_profiles().get_result()['profiles']
+      profile = find_default(base_config, instance_profile_objects, name='instance_profile_name')
+      if not profile:
+         raise Exception(f'Specified profile {profile_name} not found in the profile list {instance_profile_objects}')

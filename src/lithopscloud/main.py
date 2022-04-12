@@ -11,16 +11,27 @@ LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops Gen2', 'Li
                                                              'Lithops Code Engine', 'Ray Gen2', 'Local Host'
 
 
+backends = [
+    {'name': LITHOPS_GEN2, 'path': 'gen2.lithops'},
+    {'name': LITHOPS_CF, 'path': 'cloud_functions'},
+    {'name': LITHOPS_CE, 'path': 'code_engine'},
+    {'name': RAY_GEN2, 'path': 'gen2.ray'},
+    {'name': LOCAL_HOST, 'path': 'local_host'}
+]
+
+def load_base_config(backend):
+    backend_path = backend['path'].replace('.', '/')
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    input_file = f"{dir_path}/modules/{backend_path}/defaults.yaml"
+
+    base_config = None
+    with open(input_file) as f:
+        base_config = yaml.safe_load(f)
+        
+    return base_config
+
 def select_backend(input_file):
     # select backend
-    backends = [
-        {'name': LITHOPS_GEN2, 'path': 'gen2.lithops'},
-        {'name': LITHOPS_CF, 'path': 'cloud_functions'},
-        {'name': LITHOPS_CE, 'path': 'code_engine'},
-        {'name': RAY_GEN2, 'path': 'gen2.ray'},
-        {'name': LOCAL_HOST, 'path': 'local_host'}
-    ]
-
     base_config = {}
 
     if input_file:
@@ -45,12 +56,7 @@ def select_backend(input_file):
     # in case input file didn't match selected option we either need to raise error or start it from scratch (defaults), currently startin from defaults
     # import pdb;pdb.set_trace()
     if backend['name'] != default:
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-
-        input_file = f"{dir_path}/modules/{backend['path'].replace('.', '/')}/defaults.yaml"
-
-        with open(input_file) as f:
-            base_config = yaml.safe_load(f)
+        base_config = load_base_config(backend)
 
     # now find the right modules
     modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
@@ -111,7 +117,33 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
     print(color_msg(f"Cluster config file: {output_file}", color=Color.LIGHTGREEN))
     print("=================================================")
 
+def generate_config(backend_name, iam_api_key,                  
+                    compute_iam_endpoint=None, cos_iam_api_key=None):
+    def error(msg):
+        print(msg)
+        raise Exception(msg)
+    
+    backend = None
+    for b in backends:
+        if b['name']  == backend_name:
+            backend = b
+            break
+        
+    if not backend:
+        error(f"Provided backend {backend} not in supported backends list {[b['name'] for b in backends]}")
+    
+    base_config = load_base_config(backend)
+    
+    # now find the right modules
+    modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
 
+    if not iam_api_key:
+        error('missing iam api key')
+
+    base_config, modules = validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key)
+
+    print('kuku')
+    
 if __name__ == '__main__':
     try:
         builder()

@@ -16,3 +16,9 @@ class LithopsSshKeyConfig(SshKeyConfig):
         self.base_config['ibm_vpc']['key_id'] = ssh_key_id
         self.base_config['ibm_vpc']['ssh_key_filename'] = ssh_key_path
         self.base_config['ibm_vpc']['ssh_user'] = ssh_user
+        
+    def verify(self, base_config):
+        key_id = base_config['ibm_vpc']['key_id']
+        ssh_key_path = base_config['ibm_vpc']['ssh_key_filename']
+        ssh_user = base_config['ibm_vpc']['ssh_user']
+
