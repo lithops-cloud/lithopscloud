@@ -117,7 +117,10 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
     print(color_msg(f"Cluster config file: {output_file}", color=Color.LIGHTGREEN))
     print("=================================================")
 
-def generate_config(backend_name, iam_api_key,                  
+def generate_config(backend_name, iam_api_key,
+                    image_id=None, profile_name=None,
+                    key_id=None, ssh_key_filename=None, ssh_user='root',
+                    zone_name=None, resource_group_id=None, vpc_id=None, security_group_id=None, subnet_id=None,                    
                     compute_iam_endpoint=None, cos_iam_api_key=None):
     def error(msg):
         print(msg)
@@ -133,6 +136,7 @@ def generate_config(backend_name, iam_api_key,
         error(f"Provided backend {backend} not in supported backends list {[b['name'] for b in backends]}")
     
     base_config = load_base_config(backend)
+    
     
     # now find the right modules
     modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
