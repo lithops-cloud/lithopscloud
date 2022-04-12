@@ -26,5 +26,5 @@ class ImageConfig(ConfigBuilder):
     def verify(self, base_config):
         image_id = self.defaults['image_id']
         image_objects = self.ibm_vpc_client.list_images().get_result()['images']
-        image_obj = find_obj(image_objects, obj_id=image_id)
+        image_obj = find_obj(image_objects, 'dummy', obj_id=image_id)
         return image_obj['id'], image_obj['minimum_provisioned_size']

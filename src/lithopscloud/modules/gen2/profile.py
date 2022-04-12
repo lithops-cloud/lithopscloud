@@ -1,6 +1,6 @@
 from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator, spinner
 from typing import Any, Dict
-from lithopscloud.modules.utils import get_option_from_list, find_default
+from lithopscloud.modules.utils import get_option_from_list, find_default, find_obj
 
 
 class ProfileConfig(ConfigBuilder):
@@ -28,7 +28,7 @@ class ProfileConfig(ConfigBuilder):
     def verify(self, base_config):
         profile_name = self.defaults['profile_name']
         instance_profile_objects = self.ibm_vpc_client.list_instance_profiles().get_result()['profiles']
-        profile = find_default(base_config, instance_profile_objects, name='instance_profile_name')
+        profile = find_obj(instance_profile_objects, 'dummy', obj_name=profile_name)
         if not profile:
             raise Exception(f'Specified profile {profile_name} not found in the profile list {instance_profile_objects}')
         return profile_name

@@ -16,6 +16,8 @@ def update_decorator(f):
     def foo(*args, **kwargs):
         result = f(*args, **kwargs)
         update_config = getattr(args[0], 'update_config')
+        if not result:
+            return args[0].base_config
         if isinstance(result, tuple):
             update_config(*result)
         else:
@@ -73,7 +75,7 @@ class ConfigBuilder:
 
     def update_config(self, *args) -> Dict[str, Any]:
         """Updates config dictionary that can be dumped to config file"""
-        raise NotImplementedError
+        return self.base_config
 
     def get_resources(self, resource_type=None):
         """

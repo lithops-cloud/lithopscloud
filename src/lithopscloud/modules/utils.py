@@ -114,7 +114,7 @@ def find_obj(objects, msg, obj_id=None, obj_name=None, default=None, do_nothing=
     if not obj:
         obj = get_option_from_list(
             msg, objects, default=default, do_nothing=do_nothing)
-        return obj
+    return obj
 
 def find_name_id(objects, msg, obj_id=None, obj_name=None, default=None, do_nothing=None):
     obj = find_obj(objects, msg, obj_id, obj_name, default, do_nothing)

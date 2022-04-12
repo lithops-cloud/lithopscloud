@@ -35,7 +35,7 @@ class ApiKeyConfig(ConfigBuilder):
         
         return api_key, compute_iam_endpoint, cos_iam_api_key
 
-    def update_config(self, iam_api_key, compute_iam_endpoint, cos_iam_api_key) -> Dict[str, Any]:
+    def update_config(self, iam_api_key, compute_iam_endpoint=None, cos_iam_api_key=None) -> Dict[str, Any]:
         self.base_config['ibm'] = {'iam_api_key': iam_api_key}
         
         if compute_iam_endpoint:

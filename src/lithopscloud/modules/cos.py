@@ -123,17 +123,13 @@ class CosConfig(ConfigBuilder):
         return response['id']
     
     def verify(self, base_config):
-        breakpoint()
-        
         chosen_bucket = base_config['ibm_cos'].get('storage_bucket')
         bucket_location = None
         
         for index, region in enumerate(BUCKET_REGIONS):
             try:
-                # skip re-initiating client in the current region (index 0)
-                if index:
-                    s3_client = self._init_boto3_client(region)
-                    print(f"Searching for bucket in {region}...")
+                s3_client = self._init_boto3_client(region)
+                print(f"Searching for bucket in {region}...")
 
                 s3_client.get_bucket_location(Bucket=chosen_bucket)
                 bucket_location = region

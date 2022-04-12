@@ -102,6 +102,7 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
 
     base_config, modules = select_backend(input_file)
     base_config, modules = validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key)
+    breakpoint()
 
     if endpoint:
         base_config['ibm_vpc']['endpoint'] = endpoint
@@ -119,12 +120,15 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
 
 def generate_config(backend_name, iam_api_key, region,
                     image_id=None, profile_name=None,
-                    key_id=None, ssh_key_filename=None, ssh_user='root',
-                    zone_name=None, resource_group_id=None, vpc_id=None, security_group_id=None, subnet_id=None,                    
-                    compute_iam_endpoint=None, cos_iam_api_key=None):
+                    key_id=None, ssh_key_filename=None,
+                    vpc_id=None, cos_bucket_name=None,
+                    compute_iam_endpoint=None, cos_iam_api_key=None,
+                    input_file=None, output_file=None):
     def error(msg):
         print(msg)
         raise Exception(msg)
+
+    input_file, output_file = verify_paths(input_file, output_file, None)
     
     backend = None
     for b in backends:
@@ -143,6 +147,8 @@ def generate_config(backend_name, iam_api_key, region,
     base_config['ibm_vpc']['ssh_key_filename'] = ssh_key_filename
     base_config['ibm_vpc']['key_id'] = key_id
     
+    if cos_bucket_name:
+        base_config['ibm_cos']['storage_bucket'] = cos_bucket_name
     if cos_iam_api_key:
         base_config['ibm_cos']['iam_api_key'] = cos_iam_api_key
         
@@ -153,16 +159,18 @@ def generate_config(backend_name, iam_api_key, region,
 
     base_config, modules = validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key)
 
-    breakpoint()
     for module in modules:
-        next_module = module(base_config)
-        base_config = next_module.verify(base_config)
+        base_config = module(base_config).verify(base_config)
 
+    with open(output_file, 'w') as outfile:
+        yaml.dump(base_config, outfile, default_flow_style=False)
 
-    if not iam_api_key:
-        error('missing iam api key')
+    print("\n\n=================================================")
+    print(color_msg(f"Cluster config file: {output_file}", color=Color.LIGHTGREEN))
+    print("=================================================")
 
-    print('kuku')
+    return output_file
+
     
 if __name__ == '__main__':
     try:
