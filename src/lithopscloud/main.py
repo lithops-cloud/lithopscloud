@@ -117,7 +117,7 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
     print(color_msg(f"Cluster config file: {output_file}", color=Color.LIGHTGREEN))
     print("=================================================")
 
-def generate_config(backend_name, iam_api_key,
+def generate_config(backend_name, iam_api_key, region,
                     image_id=None, profile_name=None,
                     key_id=None, ssh_key_filename=None, ssh_user='root',
                     zone_name=None, resource_group_id=None, vpc_id=None, security_group_id=None, subnet_id=None,                    
@@ -136,10 +136,21 @@ def generate_config(backend_name, iam_api_key,
         error(f"Provided backend {backend} not in supported backends list {[b['name'] for b in backends]}")
     
     base_config = load_base_config(backend)
-    
+     
+    base_config['ibm_vpc']['vpc_id'] = vpc_id
+    base_config['ibm_vpc']['image_id'] = image_id
+    base_config['ibm_vpc']['profile_name'] = profile_name
+    base_config['ibm_vpc']['ssh_key_filename'] = ssh_key_filename
+    base_config['ibm_vpc']['key_id'] = key_id
+
+    base_config['ibm_vpc']['endpoint'] = f'https://{region}.iaas.cloud.ibm.com'
     
     # now find the right modules
     modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
+
+    base_config, modules = validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key)
+
+    breakpoint()
     for module in modules:
         next_module = module(base_config)
         base_config = next_module.verify(base_config)
@@ -147,8 +158,6 @@ def generate_config(backend_name, iam_api_key,
 
     if not iam_api_key:
         error('missing iam api key')
-
-    base_config, modules = validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key)
 
     print('kuku')
     

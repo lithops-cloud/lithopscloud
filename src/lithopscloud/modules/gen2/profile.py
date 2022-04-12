@@ -31,3 +31,4 @@ class ProfileConfig(ConfigBuilder):
         profile = find_default(base_config, instance_profile_objects, name='instance_profile_name')
         if not profile:
             raise Exception(f'Specified profile {profile_name} not found in the profile list {instance_profile_objects}')
+        return base_config

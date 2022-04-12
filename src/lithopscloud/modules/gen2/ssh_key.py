@@ -134,3 +134,4 @@ class SshKeyConfig(ConfigBuilder):
         if not public_res == private_res:
             raise errors.ValidationError(
             '', reason=f"Private ssh key {self.defaults['ssh_key_filename']} and public key {self.defaults['key_id']} are not a pair")
+        return base_config

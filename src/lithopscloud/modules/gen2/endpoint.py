@@ -27,4 +27,6 @@ class EndpointConfig(ConfigBuilder):
         return region_obj['endpoint']
 
     def verify(self, base_config):
-        self.ibm_vpc_client.list_regions()
+        if len(self.ibm_vpc_client.list_regions().result['regions']) == 0:
+            raise Exception('failed to list regions')
+        return base_config
