@@ -142,7 +142,10 @@ def generate_config(backend_name, iam_api_key, region,
     base_config['ibm_vpc']['profile_name'] = profile_name
     base_config['ibm_vpc']['ssh_key_filename'] = ssh_key_filename
     base_config['ibm_vpc']['key_id'] = key_id
-
+    
+    if cos_iam_api_key:
+        base_config['ibm_cos']['iam_api_key'] = cos_iam_api_key
+        
     base_config['ibm_vpc']['endpoint'] = f'https://{region}.iaas.cloud.ibm.com'
     
     # now find the right modules

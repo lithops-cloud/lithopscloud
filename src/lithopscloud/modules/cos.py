@@ -11,9 +11,12 @@ from lithopscloud.modules.utils import inquire_user
 BUCKET_REGIONS = []  # regions in which bucket can be created
 
 class CosConfig(ConfigBuilder):
-
-    def run(self) -> Dict[str, Any]:
-        def _init_boto3_client(region):
+    
+    def __init__(self, base_config: Dict[str, Any]) -> None:
+        super().__init__(base_config)
+        init_cos_region_list()
+        
+    def _init_boto3_client(self, region):
             if self.base_config.get('ibm_cos') and self.base_config['ibm_cos'].get('iam_api_key'):
                 cos_iam_api_key = self.base_config['ibm_cos']['iam_api_key']
                 del CACHE['resource_group_id']
@@ -27,10 +30,10 @@ class CosConfig(ConfigBuilder):
                                     config=Config(signature_version='oauth'),
                                     endpoint_url=f'https://s3.{region}.cloud-object-storage.appdomain.cloud')
 
+    def run(self) -> Dict[str, Any]:
+    
         print(color_msg("\n\nConfiguring IBM cloud object storage:\n", color=Color.YELLOW))
-
-        init_cos_region_list()
-        s3_client = _init_boto3_client(BUCKET_REGIONS[0])  # initiate using a randomly chosen region
+        s3_client = self._init_boto3_client(BUCKET_REGIONS[0])  # initiate using a randomly chosen region
 
         print("Obtaining existing COS instances...")
 
@@ -60,7 +63,7 @@ class CosConfig(ConfigBuilder):
                 try:
                     # skip re-initiating client in the current region (index 0)
                     if index:
-                        s3_client = _init_boto3_client(region)
+                        s3_client = self._init_boto3_client(region)
                         print(f"Searching for bucket in {region}...")
                     s3_client.get_bucket_location(Bucket=chosen_bucket)
                     bucket_location = region
@@ -81,7 +84,7 @@ class CosConfig(ConfigBuilder):
                 inquire_user('Please choose a region you would like your bucket to be located in',
                              BUCKET_REGIONS, handle_strings=True)
             # changing location of the client to create a bucket in requested region.
-            s3_client = _init_boto3_client(bucket_location)
+            s3_client = self._init_boto3_client(bucket_location)
 
             chosen_bucket = create_bucket(s3_client, ibm_service_instance_id)
 
@@ -118,6 +121,36 @@ class CosConfig(ConfigBuilder):
 
         print(color_msg(f"A new COS instance named '{cos_name}' was created", color=Color.LIGHTGREEN))
         return response['id']
+    
+    def verify(self, base_config):
+        breakpoint()
+        
+        chosen_bucket = base_config['ibm_cos'].get('storage_bucket')
+        bucket_location = None
+        
+        for index, region in enumerate(BUCKET_REGIONS):
+            try:
+                # skip re-initiating client in the current region (index 0)
+                if index:
+                    s3_client = self._init_boto3_client(region)
+                    print(f"Searching for bucket in {region}...")
+
+                s3_client.get_bucket_location(Bucket=chosen_bucket)
+                bucket_location = region
+                print(f"bucket found in {region}...")
+                break
+            except ClientError as ex:
+                if ex.response['Error']['Code'] == 'NoSuchBucket':
+                    pass
+                else:
+                    raise
+                
+        if not bucket_location:
+            raise Exception(f"Couldn't locate the specified bucket {chosen_bucket} region")
+        else:
+            base_config['ibm_cos']['region'] = bucket_location
+            
+        return base_config
 
 
 def create_bucket(s3_client, ibm_service_instance_id):

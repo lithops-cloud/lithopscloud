@@ -22,13 +22,13 @@ class ProfileConfig(ConfigBuilder):
         instance_profile = get_option_from_list(
             'Carefully choose instance profile, please refer to https://cloud.ibm.com/docs/vpc?topic=vpc-profiles', instance_profile_objects, default=default)
 
-        
         return instance_profile['name']
     
+    @update_decorator
     def verify(self, base_config):
         profile_name = self.defaults['profile_name']
         instance_profile_objects = self.ibm_vpc_client.list_instance_profiles().get_result()['profiles']
         profile = find_default(base_config, instance_profile_objects, name='instance_profile_name')
         if not profile:
             raise Exception(f'Specified profile {profile_name} not found in the profile list {instance_profile_objects}')
-        return base_config
+        return profile_name

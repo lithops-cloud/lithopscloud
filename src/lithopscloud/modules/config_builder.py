@@ -124,6 +124,7 @@ class ConfigBuilder:
         iam_token_manager = IAMTokenManager(apikey=self.base_config['ibm']['iam_api_key'], url=ConfigBuilder.compute_iam_endpoint)
         return iam_token_manager.get_token()
 
+    @update_decorator
     def verify(self, base_config):
         pass
 

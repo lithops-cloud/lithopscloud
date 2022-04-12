@@ -8,8 +8,7 @@ from lithopscloud.modules.utils import color_msg, Color, ARG_STATUS, MSG_STATUS,
 # TODO: change ibm_cos path to cos after cos-package name changes to cos
 CONFIGURABLE_STORAGE = [{'config_title': 'ibm_cos', 'path': 'cos-package'},
                         {'config_title': 'localhost', 'path': 'local_host'}]
-CONFIGURABLE_COMPUTE = [{'config_title': 'ibm_vpc', 'path': 'gen2'},
-                        {'config_title': 'ibm_cf', 'path': 'cloud_functions'},
+CONFIGURABLE_COMPUTE = [{'config_title': 'ibm_cf', 'path': 'cloud_functions'},
                         {'config_title': 'code_engine', 'path': 'code_engine'},
                         {'config_title': 'localhost', 'path': 'local_host'}]
 
