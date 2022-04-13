@@ -5,7 +5,7 @@ import click
 import yaml
 from lithopscloud.modules.config_verification import verify_config_file
 
-from lithopscloud.modules.utils import get_option_from_list, color_msg, Color, verify_paths, load_base_config
+from lithopscloud.modules.utils import get_option_from_list, color_msg, Color, verify_paths
 
 LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops Gen2', 'Lithops Cloud Functions', \
                                                              'Lithops Code Engine', 'Ray Gen2', 'Local Host'
@@ -51,6 +51,17 @@ def select_backend(input_file):
     modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
 
     return base_config, modules
+
+def load_base_config(backend):
+    backend_path = backend['path'].replace('.', '/')
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    input_file = f"{dir_path}/modules/{backend_path}/defaults.yaml"
+
+    base_config = None
+    with open(input_file) as f:
+        base_config = yaml.safe_load(f)
+
+    return base_config
 
 def validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key):
     # ugly hack to support case when api_key been provided by user as parameter to lithopscloud

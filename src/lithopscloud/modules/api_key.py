@@ -55,7 +55,7 @@ class ApiKeyConfig(ConfigBuilder):
         else:
             ConfigBuilder.cos_iam_api_key = api_key
             
-        ConfigBuilder.compute_iam_endpoint = self.base_config['ibm']['iam_endpoint']
+        ConfigBuilder.compute_iam_endpoint = self.base_config['ibm'].get('iam_endpoint')
         
         verify_iam_api_key(None, api_key)
         ConfigBuilder.iam_api_key = api_key
