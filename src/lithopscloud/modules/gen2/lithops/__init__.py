@@ -7,7 +7,6 @@ from lithopscloud.modules.cos import CosConfig
 from lithopscloud.modules.gen2.lithops.runtime import VPCRuntimeConfig
 from lithopscloud.modules.gen2.lithops.dismantle import DismantleConfig
 from lithopscloud.modules.gen2.lithops.profile import LithopsProfileConfig
-import importlib
 
 MODULES = [ApiKeyConfig, LithopsEndpointConfig, LithopsVPCConfig, LithopsSshKeyConfig, LithopsImageConfig, CosConfig, VPCRuntimeConfig, DismantleConfig, LithopsProfileConfig]
 
@@ -17,10 +16,7 @@ def load_config(backend, iam_api_key, region=None,
                     image_id=None, profile_name=None,
                     key_id=None, ssh_key_filename=None,
                     vpc_id=None, cos_bucket_name=None,
-                    compute_iam_endpoint=None, cos_iam_api_key=None,
-                    input_file=None, output_file=None):
-
-    breakpoint()
+                    compute_iam_endpoint=None, cos_iam_api_key=None):
     
     base_config = load_base_config(backend)
     
@@ -42,8 +38,3 @@ def load_config(backend, iam_api_key, region=None,
     base_config['ibm_vpc']['endpoint'] = f'https://{region}.iaas.cloud.ibm.com'
     
     return base_config
-
-    
-    
-    
-    

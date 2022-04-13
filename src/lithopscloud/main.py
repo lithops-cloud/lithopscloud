@@ -158,6 +158,7 @@ def generate_config(backend_name, *args, **kwargs):
     # now find the right modules
     modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
     
+    breakpoint()
     for module in modules:
         base_config = module(base_config).verify(base_config)
 
