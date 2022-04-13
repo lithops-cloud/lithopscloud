@@ -20,11 +20,11 @@ def load_config(backend, iam_api_key, region=None,
     base_config = load_base_config(backend)
     
     base_config['provider']['iam_api_key'] = iam_api_key
-    base_config['available_node_types']['ray_head_default']['vpc_id'] = vpc_id
+    base_config['available_node_types']['ray_head_default']['node_config']['vpc_id'] = vpc_id
     base_config['available_node_types']['ray_head_default']['node_config']['image_id'] = image_id
     base_config['available_node_types']['ray_head_default']['node_config']['instance_profile_name'] = profile_name
+    base_config['available_node_types']['ray_head_default']['node_config']['key_id'] = key_id
     base_config['auth']['ssh_private_key'] = ssh_key_filename
-    base_config['available_node_types'] = {'ray_head_default': {'node_config': {'key_id': key_id}}}
     
     base_config['provider']['region'] = region
     base_config['provider']['endpoint'] = f'https://{region}.iaas.cloud.ibm.com'

@@ -159,6 +159,7 @@ class RayVPCConfig(VPCConfig):
                 break        
         
     def update_config(self, vpc_obj, zone_obj, subnet_id):
+        breakpoint()
         sec_group_id = vpc_obj['default_security_group']['id']
 
         validate_security_group(self.ibm_vpc_client, sec_group_id)

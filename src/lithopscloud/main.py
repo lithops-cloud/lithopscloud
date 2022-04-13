@@ -153,6 +153,7 @@ def generate_config(backend_name, *args, **kwargs):
         error(f"Provided backend {backend} not in supported backends list {[b['name'] for b in backends]}")
     
     # now update base config with backend specific params
+    breakpoint()
     base_config = importlib.import_module(f"lithopscloud.modules.{backend['path']}").load_config(backend, *args, **kwargs)
     
     # now find the right modules
