@@ -87,6 +87,28 @@ To utilize simply run ```lithopscloud --verify-config CONFIG_FILE_PATH -o OUTPUT
 </tr>
 </table>
 
+### Using lithopscloud config tool programmatically
+
+##### Lithops Gen2
+```
+from lithopscloud import generate_config
+from lithopscloud import LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST
+
+api_key = '<IAM_API_KEY>'
+region = 'eu-de'
+generate_config(LITHOPS_GEN2, api_key, region, cos_bucket_name='kpavel-bucket', image_id='r010-5a674db7-95aa-45c5-a2f1-a6aa9d7e93ad', key_id='r010-fe6cb103-60e6-46bc-9cb5-14e415990849', ssh_key_filename='/home/kpavel/.ssh/id_rsa', profile_name='bx2-2x8', vpc_id='r010-af1adda4-e4e5-4060-9aa2-7a0c981aff8e')
+
+```
+
+###### Ray Gen2
+```
+from lithopscloud import generate_config
+from lithopscloud import LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST
+
+api_key = '<IAM_API_KEY>'
+region = 'eu-de'
+generate_config(RAY_GEN2, api_key, region, image_id='r010-5a674db7-95aa-45c5-a2f1-a6aa9d7e93ad', key_id='r010-fe6cb103-60e6-46bc-9cb5-14e415990849', ssh_key_filename='/home/kpavel/.ssh/id_rsa', profile_name='bx2-2x8', vpc_id='r010-af1adda4-e4e5-4060-9aa2-7a0c981aff8e', min_workers=1, max_workers=1)
+```
 
 ## For Contributors
 
