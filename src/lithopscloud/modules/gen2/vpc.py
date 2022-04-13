@@ -301,7 +301,6 @@ class VPCConfig(ConfigBuilder):
 
     @update_decorator
     def verify(self, base_config):
-        breakpoint()
         vpc_obj = self.ibm_vpc_client.get_vpc(id=self.defaults['vpc_id']).result
         if not vpc_obj:
             raise Exception(f"failed to find vpc id {self.defaults['vpc_id']}")

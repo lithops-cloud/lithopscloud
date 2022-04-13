@@ -28,5 +28,11 @@ def load_config(backend, iam_api_key, region=None,
     
     base_config['provider']['region'] = region
     base_config['provider']['endpoint'] = f'https://{region}.iaas.cloud.ibm.com'
+
+    base_config['max_workers'] = max_workers
+    base_config['available_node_types']['ray_head_default']['min_workers'] = min_workers
+    base_config['available_node_types']['ray_head_default']['max_workers'] = max_workers
+
+
     
     return base_config

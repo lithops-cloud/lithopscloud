@@ -7,6 +7,7 @@ class RayApiKeyConfig(ApiKeyConfig):
     
     def __init__(self, base_config: Dict[str, Any]) -> None:
         super().__init__(base_config)
+        self.base_config.pop('ibm', None)
         self.defaults['api_key'] = self.base_config['provider']['iam_api_key'] if self.base_config.setdefault('provider', {}) \
             else None
 

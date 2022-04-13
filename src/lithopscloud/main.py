@@ -102,7 +102,6 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
 
     base_config, modules = select_backend(input_file)
     base_config, modules = validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key)
-    breakpoint()
 
     if endpoint:
         base_config['ibm_vpc']['endpoint'] = endpoint
@@ -153,13 +152,11 @@ def generate_config(backend_name, *args, **kwargs):
         error(f"Provided backend {backend} not in supported backends list {[b['name'] for b in backends]}")
     
     # now update base config with backend specific params
-    breakpoint()
     base_config = importlib.import_module(f"lithopscloud.modules.{backend['path']}").load_config(backend, *args, **kwargs)
     
     # now find the right modules
     modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
     
-    breakpoint()
     for module in modules:
         base_config = module(base_config).verify(base_config)
 
