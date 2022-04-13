@@ -2,6 +2,7 @@ import re
 from typing import Any, Dict
 
 import inquirer
+from rsa import verify
 from lithopscloud.modules.config_builder import ConfigBuilder
 from lithopscloud.modules.utils import find_default, get_option_from_list
 
@@ -39,3 +40,12 @@ class WorkersConfig(ConfigBuilder):
                 answers['max_workers'])
 
         return self.base_config
+    
+    def verify(self, base_config):
+        min_workers = base_config['available_node_types']['ray_head_default']['min_workers']
+        max_workers = base_config['available_node_types']['ray_head_default']['max_workers']
+        
+        if max_workers < min_workers:
+            raise Exception(f'specified min workers {min_workers} larger than max workers {max_workers}')
+
+        return base_config
