@@ -152,7 +152,12 @@ class RayVPCConfig(VPCConfig):
 
         self.vpc_name = 'ray-cluster-vpc'
         self.sg_rules = REQUIRED_RULES
-
+        
+        if base_config.get('available_node_types'):
+            for available_node_type in self.base_config['available_node_types']:
+                self.defaults['vpc_id'] = base_config['available_node_types'][available_node_type]['node_config'].get('vpc_id')
+                break        
+        
     def update_config(self, vpc_obj, zone_obj, subnet_id):
         sec_group_id = vpc_obj['default_security_group']['id']
 

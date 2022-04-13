@@ -1,6 +1,4 @@
 from email.mime import base
-from nturl2path import url2pathname
-import ibm_cloud_sdk_core
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_platform_services import IamIdentityV1
 from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator

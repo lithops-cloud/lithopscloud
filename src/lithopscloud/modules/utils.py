@@ -11,6 +11,8 @@ import yaml
 from inquirer import errors
 from ibm_platform_services import IamIdentityV1
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
+import ibm_cloud_sdk_core
+
 
 CACHE = {}
 ARG_STATUS = Enum('STATUS', 'VALID INVALID MISSING')  # variable possible status.
