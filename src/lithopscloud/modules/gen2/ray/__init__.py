@@ -10,7 +10,7 @@ from lithopscloud.modules.gen2.ray.profile import RayProfileConfig
 MODULES = [RayApiKeyConfig, RayEndpointConfig, RayVPCConfig,
            RaySshKeyConfig, RayImageConfig, FloatingIpConfig, WorkersConfig, RayProfileConfig]
 
-from lithopscloud.modules.utils import load_base_config
+from lithopscloud.main import load_base_config
 
 def load_config(backend, iam_api_key, region=None,
                     image_id=None, profile_name=None,

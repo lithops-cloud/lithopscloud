@@ -9,6 +9,8 @@ from enum import Enum
 import inquirer
 import yaml
 from inquirer import errors
+from ibm_platform_services import IamIdentityV1
+from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 
 CACHE = {}
 ARG_STATUS = Enum('STATUS', 'VALID INVALID MISSING')  # variable possible status.
@@ -274,6 +276,16 @@ def verify_paths(input_path, output_path, verify_config=False):
                                "Provide a custom path for your config file, or leave blank for default output location",
                                'Using default output path\n')
     return input_path, output_path
+
+def verify_iam_api_key(answers, apikey, iam_endpoint=None):
+    """Terminates the config tool if no IAM_API_KEY matching the provided value exists"""
+
+    iam_identity_service = IamIdentityV1(authenticator=IAMAuthenticator(apikey, url=iam_endpoint))
+    try:
+        iam_identity_service.get_api_keys_details(iam_api_key=apikey)
+    except ibm_cloud_sdk_core.api_exception.ApiException:
+        raise errors.ValidationError('', reason=color_msg(f"No IAmApiKey matching the given value {apikey} was found.", Color.RED))
+    return True
 
 def color_msg(msg, color=None, style=None, background=None):
     """reformat a given string and returns it, matching the desired color,style and background in Ansi color code.

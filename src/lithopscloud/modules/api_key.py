@@ -5,7 +5,7 @@ from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_platform_services import IamIdentityV1
 from lithopscloud.modules.config_builder import ConfigBuilder, update_decorator
 from typing import Any, Dict
-from lithopscloud.modules.utils import color_msg, Color, password_dialog
+from lithopscloud.modules.utils import color_msg, Color, password_dialog, verify_iam_api_key 
 from inquirer import errors
 
 
@@ -20,7 +20,7 @@ class ApiKeyConfig(ConfigBuilder):
     def run(self, api_key=None, compute_iam_endpoint=None, cos_iam_api_key=None) -> Dict[str, Any]:
         # first validate cos_iam_api_key if exists as it uses default iam endpoint
         if cos_iam_api_key:            
-            verify_iam_api_key(None, cos_iam_api_key)
+            verify_iam_api_key(None, cos_iam_api_key, iam_endpoint=ConfigBuilder.compute_iam_endpoint)
             
         ConfigBuilder.compute_iam_endpoint = compute_iam_endpoint
         
@@ -51,24 +51,14 @@ class ApiKeyConfig(ConfigBuilder):
         api_key = base_config['ibm']['iam_api_key']
         
         if cos_iam_api_key:
-            verify_iam_api_key(None, base_config['ibm_cos']['iam_api_key'])
+            verify_iam_api_key(None, base_config['ibm_cos']['iam_api_key'], iam_endpoint=ConfigBuilder.compute_iam_endpoint)
         else:
             ConfigBuilder.cos_iam_api_key = api_key
             
         ConfigBuilder.compute_iam_endpoint = self.base_config['ibm'].get('iam_endpoint')
         
-        verify_iam_api_key(None, api_key)
+        verify_iam_api_key(None, api_key, iam_endpoint=ConfigBuilder.compute_iam_endpoint)
         ConfigBuilder.iam_api_key = api_key
             
         return base_config
 
-
-def verify_iam_api_key(answers,apikey):
-    """Terminates the config tool if no IAM_API_KEY matching the provided value exists"""
-
-    iam_identity_service = IamIdentityV1(authenticator=IAMAuthenticator(apikey, url=ConfigBuilder.compute_iam_endpoint))
-    try:
-        iam_identity_service.get_api_keys_details(iam_api_key=apikey)
-    except ibm_cloud_sdk_core.api_exception.ApiException:
-        raise errors.ValidationError('', reason=color_msg(f"No IAmApiKey matching the given value {apikey} was found.", Color.RED))
-    return True
