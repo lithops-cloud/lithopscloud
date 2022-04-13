@@ -275,6 +275,16 @@ def verify_paths(input_path, output_path, verify_config=False):
                                'Using default output path\n')
     return input_path, output_path
 
+def load_base_config(backend):
+    backend_path = backend['path'].replace('.', '/')
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    input_file = f"{dir_path}/modules/{backend_path}/defaults.yaml"
+
+    base_config = None
+    with open(input_file) as f:
+        base_config = yaml.safe_load(f)
+        
+    return base_config
 
 def color_msg(msg, color=None, style=None, background=None):
     """reformat a given string and returns it, matching the desired color,style and background in Ansi color code.

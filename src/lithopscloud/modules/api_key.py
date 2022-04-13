@@ -1,3 +1,4 @@
+from email.mime import base
 from nturl2path import url2pathname
 import ibm_cloud_sdk_core
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
@@ -44,6 +45,22 @@ class ApiKeyConfig(ConfigBuilder):
             self.base_config['ibm_cos'] = {'iam_api_key': cos_iam_api_key}
             
         return self.base_config
+    
+    def verify(self, base_config):
+        cos_iam_api_key = base_config['ibm_cos'].get('iam_api_key')
+        api_key = base_config['ibm']['iam_api_key']
+        
+        if cos_iam_api_key:
+            verify_iam_api_key(None, base_config['ibm_cos']['iam_api_key'])
+        else:
+            ConfigBuilder.cos_iam_api_key = api_key
+            
+        ConfigBuilder.compute_iam_endpoint = self.base_config['ibm']['iam_endpoint']
+        
+        verify_iam_api_key(None, api_key)
+        ConfigBuilder.iam_api_key = api_key
+            
+        return base_config
 
 
 def verify_iam_api_key(answers,apikey):

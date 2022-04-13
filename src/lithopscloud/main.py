@@ -5,7 +5,7 @@ import click
 import yaml
 from lithopscloud.modules.config_verification import verify_config_file
 
-from lithopscloud.modules.utils import get_option_from_list, color_msg, Color, verify_paths
+from lithopscloud.modules.utils import get_option_from_list, color_msg, Color, verify_paths, load_base_config
 
 LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops Gen2', 'Lithops Cloud Functions', \
                                                              'Lithops Code Engine', 'Ray Gen2', 'Local Host'
@@ -18,17 +18,6 @@ backends = [
     {'name': RAY_GEN2, 'path': 'gen2.ray'},
     {'name': LOCAL_HOST, 'path': 'local_host'}
 ]
-
-def load_base_config(backend):
-    backend_path = backend['path'].replace('.', '/')
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    input_file = f"{dir_path}/modules/{backend_path}/defaults.yaml"
-
-    base_config = None
-    with open(input_file) as f:
-        base_config = yaml.safe_load(f)
-        
-    return base_config
 
 def select_backend(input_file):
     # select backend
@@ -118,17 +107,30 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
     print(color_msg(f"Cluster config file: {output_file}", color=Color.LIGHTGREEN))
     print("=================================================")
 
-def generate_config(backend_name, iam_api_key, region,
-                    image_id=None, profile_name=None,
-                    key_id=None, ssh_key_filename=None,
-                    vpc_id=None, cos_bucket_name=None,
-                    compute_iam_endpoint=None, cos_iam_api_key=None,
-                    input_file=None, output_file=None):
+def error(msg):
+    print(msg)
+    raise Exception(msg)
+
+# def get_config_template(backend_name):
+#     input_file, output_file = verify_paths(input_file, output_file, None)
+    
+#     backend = None
+#     for b in backends:
+#         if b['name']  == backend_name:
+#             backend = b
+#             break
+        
+#     if not backend:
+#         error(f"Provided backend {backend} not in supported backends list {[b['name'] for b in backends]}")
+    
+#     return load_base_config(backend)
+
+def generate_config(backend_name, *args, **kwargs):
     def error(msg):
         print(msg)
         raise Exception(msg)
 
-    input_file, output_file = verify_paths(input_file, output_file, None)
+    _, output_file = verify_paths(None, None)
     
     backend = None
     for b in backends:
@@ -139,26 +141,12 @@ def generate_config(backend_name, iam_api_key, region,
     if not backend:
         error(f"Provided backend {backend} not in supported backends list {[b['name'] for b in backends]}")
     
-    base_config = load_base_config(backend)
-     
-    base_config['ibm_vpc']['vpc_id'] = vpc_id
-    base_config['ibm_vpc']['image_id'] = image_id
-    base_config['ibm_vpc']['profile_name'] = profile_name
-    base_config['ibm_vpc']['ssh_key_filename'] = ssh_key_filename
-    base_config['ibm_vpc']['key_id'] = key_id
-    
-    if cos_bucket_name:
-        base_config['ibm_cos']['storage_bucket'] = cos_bucket_name
-    if cos_iam_api_key:
-        base_config['ibm_cos']['iam_api_key'] = cos_iam_api_key
-        
-    base_config['ibm_vpc']['endpoint'] = f'https://{region}.iaas.cloud.ibm.com'
+    # now update base config with backend specific params
+    base_config = importlib.import_module(f"lithopscloud.modules.{backend['path']}").load_config(backend, *args, **kwargs)
     
     # now find the right modules
     modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
-
-    base_config, modules = validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key)
-
+    
     for module in modules:
         base_config = module(base_config).verify(base_config)
 
