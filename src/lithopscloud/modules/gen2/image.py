@@ -25,6 +25,11 @@ class ImageConfig(ConfigBuilder):
     @update_decorator
     def verify(self, base_config):
         image_id = self.defaults['image_id']
-        image_objects = self.ibm_vpc_client.list_images().get_result()['images']
-        image_obj = find_obj(image_objects, 'dummy', obj_id=image_id)
+        if image_id:
+            image_objects = self.ibm_vpc_client.list_images().get_result()['images']
+            image_obj = find_obj(image_objects, 'dummy', obj_id=image_id)
+        else:
+            # find first occurance
+            image_obj = next((obj for obj in image_objects if 'ibm-ubuntu-20-04-3' in obj['name']), None)
+            
         return image_obj['id'], image_obj['minimum_provisioned_size']

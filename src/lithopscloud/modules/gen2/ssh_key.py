@@ -129,11 +129,33 @@ class SshKeyConfig(ConfigBuilder):
 
     @update_decorator
     def verify(self, base_config):
-        public_res = self.ibm_vpc_client.get_key(self.defaults['key_id']).get_result()['public_key'].split(' ')[1]
-        private_res = subprocess.getoutput([f"ssh-keygen -y -f {self.defaults['ssh_key_filename']} | cut -d' ' -f 2"])
+        if self.defaults['key_id']:
+            public_res = self.ibm_vpc_client.get_key(self.defaults['key_id']).get_result()['public_key'].split(' ')[1]
+            private_res = subprocess.getoutput([f"ssh-keygen -y -f {self.defaults['ssh_key_filename']} | cut -d' ' -f 2"])
 
-        if not public_res == private_res:
-            raise errors.ValidationError(
-            '', reason=f"Private ssh key {self.defaults['ssh_key_filename']} and public key {self.defaults['key_id']} are not a pair")
-        
-        return self.defaults['key_id'], self.defaults['ssh_key_filename'], 'root'
+            if not public_res == private_res:
+                raise errors.ValidationError(
+                '', reason=f"Private ssh key {self.defaults['ssh_key_filename']} and public key {self.defaults['key_id']} are not a pair")
+            
+            return self.defaults['key_id'], self.defaults['ssh_key_filename'], 'root'
+        else:
+            # we have only private key, generate public key from it
+            ssh_key_data = subprocess.getoutput([f"ssh-keygen -y -f {self.defaults['ssh_key_filename']} | cut -d' ' -f 2"])
+            
+            if base_config.get('ibm_vpc'):
+                resource_group_id = base_config['ibm_vpc']['resource_group_id']
+            else:
+                for available_node_type in base_config['available_node_types']:
+                    resource_group_id = base_config['available_node_types'][available_node_type]['node_config']['resource_group_id']
+                    break
+
+            keyname = 'lithopscloudkey'
+            response = self.ibm_vpc_client.create_key(public_key=ssh_key_data, name=keyname, resource_group={
+                                         "id": resource_group_id}, type='rsa')
+
+            breakpoint()            
+            
+            print(f"\033[92mnew SSH key {keyname} been registered in vpc\033[0m")
+
+            result = response.get_result()
+            return result['name'], result['id'], self.defaults['ssh_key_filename']
