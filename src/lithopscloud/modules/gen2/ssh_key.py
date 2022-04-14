@@ -153,9 +153,7 @@ class SshKeyConfig(ConfigBuilder):
             response = self.ibm_vpc_client.create_key(public_key=ssh_key_data, name=keyname, resource_group={
                                          "id": resource_group_id}, type='rsa')
 
-            breakpoint()            
-            
             print(f"\033[92mnew SSH key {keyname} been registered in vpc\033[0m")
 
             result = response.get_result()
-            return result['name'], result['id'], self.defaults['ssh_key_filename']
+            return result['id'], self.defaults['ssh_key_filename'], 'root'

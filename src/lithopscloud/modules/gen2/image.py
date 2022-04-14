@@ -25,8 +25,8 @@ class ImageConfig(ConfigBuilder):
     @update_decorator
     def verify(self, base_config):
         image_id = self.defaults['image_id']
+        image_objects = self.ibm_vpc_client.list_images().get_result()['images']
         if image_id:
-            image_objects = self.ibm_vpc_client.list_images().get_result()['images']
             image_obj = find_obj(image_objects, 'dummy', obj_id=image_id)
         else:
             # find first occurance

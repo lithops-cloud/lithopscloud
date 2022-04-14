@@ -310,7 +310,6 @@ class VPCConfig(ConfigBuilder):
     @update_decorator
     def verify(self, base_config):
         # if vpc_id not specified will look for the first one
-        breakpoint()
 
         if self.defaults['vpc_id']:
             vpc_obj = self.ibm_vpc_client.get_vpc(id=self.defaults['vpc_id']).result
