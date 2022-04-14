@@ -147,7 +147,7 @@ def generate_config(backend_name, *args, **kwargs):
         if b['name']  == backend_name:
             backend = b
             break
-        
+
     if not backend:
         error(f"Provided backend {backend} not in supported backends list {[b['name'] for b in backends]}")
     

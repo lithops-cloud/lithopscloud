@@ -16,13 +16,18 @@ class VPCConfig(ConfigBuilder):
 
         self.sg_rules = {}
         self.vpc_name = 'cluster-vpc'
-
-    @update_decorator
-    def run(self) -> Dict[str, Any]:
+        
+    def _get_region(self):
+        region = None
         try:
             region = get_region_by_endpoint(self.ibm_vpc_client.service_url)
         except Exception:
             region = ConfigBuilder.region
+        return region
+
+    @update_decorator
+    def run(self) -> Dict[str, Any]:
+        region = self._get_region()
 
         vpc_obj, zone_obj = self._select_vpc(self.base_config, region)
 
@@ -89,6 +94,71 @@ class VPCConfig(ConfigBuilder):
         else:
             return None
 
+    def _create_vpc_peripherials(self, ibm_vpc_client, vpc_obj, zone_obj, resource_group):
+        vpc_name = vpc_obj['name']
+        vpc_id = vpc_obj['id']
+        # create subnet
+        subnet_name = '{}-subnet'.format(vpc_name)
+        subnet_data = None
+
+        # find cidr
+        ipv4_cidr_block = None
+        res = ibm_vpc_client.list_vpc_address_prefixes(
+            vpc_id).result
+        address_prefixes = res['address_prefixes']
+
+        for address_prefix in address_prefixes:
+            if address_prefix['zone']['name'] == zone_obj['name']:
+                ipv4_cidr_block = address_prefix['cidr']
+                break
+
+        subnet_prototype = {}
+        subnet_prototype['zone'] = {'name': zone_obj['name']}
+        subnet_prototype['ip_version'] = 'ipv4'
+        subnet_prototype['name'] = subnet_name
+        subnet_prototype['resource_group'] = resource_group
+        subnet_prototype['vpc'] = {'id': vpc_id}
+        subnet_prototype['ipv4_cidr_block'] = ipv4_cidr_block
+
+        subnet_data = ibm_vpc_client.create_subnet(
+            subnet_prototype).result
+        subnet_id = subnet_data['id']
+
+        # create public gateway
+        gateway_id = create_public_gateway(vpc_obj, zone_obj, resource_group, subnet_name)
+
+        # Attach public gateway to the subnet
+        ibm_vpc_client.set_subnet_public_gateway(
+            subnet_id, {'id': gateway_id})
+
+        print(
+            f"\033[92mVPC subnet {subnet_prototype['name']} been created and attached to gateway\033[0m")
+
+        # Update security group to have all required rules
+        sg_id = vpc_obj['default_security_group']['id']
+
+        # update sg name
+        sg_name = '{}-sg'.format(vpc_name)
+        ibm_vpc_client.update_security_group(
+            sg_id, security_group_patch={'name': sg_name})
+
+        # add rule to open tcp traffic inside security group
+        sg_rule_prototype = self._build_security_group_rule_prototype_model(
+            'inbound_tcp_sg', sg_id=sg_id)
+        res = ibm_vpc_client.create_security_group_rule(
+            sg_id, sg_rule_prototype).get_result()
+
+        # add all other required rules
+        for rule in self.sg_rules.keys():
+            sg_rule_prototype = self._build_security_group_rule_prototype_model(
+                rule)
+            if sg_rule_prototype:
+                res = ibm_vpc_client.create_security_group_rule(
+                    sg_id, sg_rule_prototype).get_result()
+
+        print(
+            f"\033[92mSecurity group {sg_name} been updated with required rules\033[0m\n")
+
     def _select_vpc(self, node_config, region):
 
         vpc_id, vpc_name, zone_obj, sg_id, resource_group = None, None, None, None, None
@@ -136,7 +206,7 @@ class VPCConfig(ConfigBuilder):
             res_group_obj = get_option_from_list(
                 "Select resource group", res_group_objects, default=default)
             return res_group_obj['id']
-
+        
         def create_public_gateway(vpc_obj, zone_obj, resource_group, subnet_name):
             vpc_id = vpc_obj['id']
             
@@ -191,68 +261,7 @@ class VPCConfig(ConfigBuilder):
 
                     print(f"\n\n\033[92mVPC {vpc_name} been created\033[0m")
 
-                    # create subnet
-                    subnet_name = '{}-subnet'.format(vpc_name)
-                    subnet_data = None
-
-                    # find cidr
-                    ipv4_cidr_block = None
-                    res = ibm_vpc_client.list_vpc_address_prefixes(
-                        vpc_id).result
-                    address_prefixes = res['address_prefixes']
-
-                    for address_prefix in address_prefixes:
-                        if address_prefix['zone']['name'] == zone_obj['name']:
-                            ipv4_cidr_block = address_prefix['cidr']
-                            break
-
-                    subnet_prototype = {}
-                    subnet_prototype['zone'] = {'name': zone_obj['name']}
-                    subnet_prototype['ip_version'] = 'ipv4'
-                    subnet_prototype['name'] = subnet_name
-                    subnet_prototype['resource_group'] = resource_group
-                    subnet_prototype['vpc'] = {'id': vpc_id}
-                    subnet_prototype['ipv4_cidr_block'] = ipv4_cidr_block
-
-                    subnet_data = ibm_vpc_client.create_subnet(
-                        subnet_prototype).result
-                    subnet_id = subnet_data['id']
-
-                    # create public gateway
-                    gateway_id = create_public_gateway(vpc_obj, zone_obj, resource_group, subnet_name)
-
-                    # Attach public gateway to the subnet
-                    ibm_vpc_client.set_subnet_public_gateway(
-                        subnet_id, {'id': gateway_id})
-
-                    print(
-                        f"\033[92mVPC subnet {subnet_prototype['name']} been created and attached to gateway\033[0m")
-
-                    # Update security group to have all required rules
-                    sg_id = vpc_obj['default_security_group']['id']
-
-                    # update sg name
-                    sg_name = '{}-sg'.format(vpc_name)
-                    ibm_vpc_client.update_security_group(
-                        sg_id, security_group_patch={'name': sg_name})
-
-                    # add rule to open tcp traffic inside security group
-                    sg_rule_prototype = self._build_security_group_rule_prototype_model(
-                        'inbound_tcp_sg', sg_id=sg_id)
-                    res = ibm_vpc_client.create_security_group_rule(
-                        sg_id, sg_rule_prototype).get_result()
-
-                    # add all other required rules
-                    for rule in self.sg_rules.keys():
-                        sg_rule_prototype = self._build_security_group_rule_prototype_model(
-                            rule)
-                        if sg_rule_prototype:
-                            res = ibm_vpc_client.create_security_group_rule(
-                                sg_id, sg_rule_prototype).get_result()
-
-                    print(
-                        f"\033[92mSecurity group {sg_name} been updated with required rules\033[0m\n")
-
+                    self._create_vpc_peripherials(ibm_vpc_client, vpc_obj, zone_obj, resource_group)
                     break
             else:
                 # validate chosen vpc has all required
@@ -292,7 +301,6 @@ class VPCConfig(ConfigBuilder):
                         ibm_vpc_client.set_subnet_public_gateway(subnet['id'], {'id': gw_id})
                     else:
                         gw_id = gw['id']
-
                 break
 
         CACHE['resource_group_id'] = resource_group['id']
@@ -301,10 +309,30 @@ class VPCConfig(ConfigBuilder):
 
     @update_decorator
     def verify(self, base_config):
+        # if vpc_id not specified will look for the first one
         vpc_obj = self.ibm_vpc_client.get_vpc(id=self.defaults['vpc_id']).result
-        if not vpc_obj:
+        if not vpc_obj and self.defaults['vpc_id']:
             raise Exception(f"failed to find vpc id {self.defaults['vpc_id']}")
-        
+        else:
+            # create new vpc
+            
+            res_group_objects = self.resource_service_client.list_resource_groups().get_result()['resources']
+            
+            print(f"Selected first found resource group {res_group_objects[0]['name']}")
+            resource_group = res_group_objects[0]
+            
+            region = self._get_region()
+            print(f"\n\n\033[92mRegion {region} been selected\033[0m")
+                        
+            vpc_obj = self.ibm_vpc_client.create_vpc(address_prefix_management='auto', classic_access=False,
+                                        name="lithopscloud-default-vpc", resource_group=resource_group).get_result()
+            
+            print(f"\n\n\033[92mVPC {vpc_obj['name']} been created\033[0m")
+            
+            zones_objects = self.ibm_vpc_client.list_region_zones(region).get_result()['zones']
+            zone_obj = zones_objects[0]
+            self._create_vpc_peripherials(self.ibm_vpc_client, vpc_obj, zone_obj, resource_group)
+
         subnet_objects = self.ibm_vpc_client.list_subnets().get_result()['subnets']
         return vpc_obj, subnet_objects[0]['zone'], subnet_objects[0]['id']
 
