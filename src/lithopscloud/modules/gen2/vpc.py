@@ -324,7 +324,7 @@ class VPCConfig(ConfigBuilder):
                 res_group_objects = self.resource_service_client.list_resource_groups().get_result()['resources']
             
                 print(f"Selected first found resource group {res_group_objects[0]['name']}")
-                resource_group = res_group_objects[0]
+                resource_group = resource_group = {'id': res_group_objects[0]['id']}
             
                 region = self._get_region()
                 print(f"\n\n\033[92mRegion {region} been selected\033[0m")
