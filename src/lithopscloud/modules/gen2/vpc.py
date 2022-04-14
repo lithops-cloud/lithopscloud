@@ -125,7 +125,7 @@ class VPCConfig(ConfigBuilder):
         subnet_id = subnet_data['id']
 
         # create public gateway
-        gateway_id = create_public_gateway(vpc_obj, zone_obj, resource_group, subnet_name)
+        gateway_id = self.create_public_gateway(vpc_obj, zone_obj, resource_group, subnet_name)
 
         # Attach public gateway to the subnet
         ibm_vpc_client.set_subnet_public_gateway(
@@ -158,6 +158,23 @@ class VPCConfig(ConfigBuilder):
 
         print(
             f"\033[92mSecurity group {sg_name} been updated with required rules\033[0m\n")
+
+    def create_public_gateway(self, vpc_obj, zone_obj, resource_group, subnet_name):
+        vpc_id = vpc_obj['id']
+        
+        gateway_prototype = {}
+        gateway_prototype['vpc'] = {'id': vpc_id}
+        gateway_prototype['zone'] = {'name': zone_obj['name']}
+        gateway_prototype['name'] = f"{subnet_name}-gw"
+        gateway_prototype['resource_group'] = resource_group
+        gateway_data = self.ibm_vpc_client.create_public_gateway(
+            **gateway_prototype).get_result()
+        gateway_id = gateway_data['id']
+
+        print(
+            f"\033[92mVPC public gateway {gateway_prototype['name']} been created\033[0m")
+
+        return gateway_id
 
     def _select_vpc(self, node_config, region):
 
@@ -207,23 +224,6 @@ class VPCConfig(ConfigBuilder):
                 "Select resource group", res_group_objects, default=default)
             return res_group_obj['id']
         
-        def create_public_gateway(vpc_obj, zone_obj, resource_group, subnet_name):
-            vpc_id = vpc_obj['id']
-            
-            gateway_prototype = {}
-            gateway_prototype['vpc'] = {'id': vpc_id}
-            gateway_prototype['zone'] = {'name': zone_obj['name']}
-            gateway_prototype['name'] = f"{subnet_name}-gw"
-            gateway_prototype['resource_group'] = resource_group
-            gateway_data = ibm_vpc_client.create_public_gateway(
-                **gateway_prototype).get_result()
-            gateway_id = gateway_data['id']
-
-            print(
-                f"\033[92mVPC public gateway {gateway_prototype['name']} been created\033[0m")
-
-            return gateway_id
-
         while True:
             CREATE_NEW = 'Create new VPC'
 
@@ -293,7 +293,7 @@ class VPCConfig(ConfigBuilder):
                             answers = inquirer.prompt(questions, raise_keyboard_interrupt=True)
 
                             if answers['answer'] == 'yes':
-                                gw_id = create_public_gateway(vpc_obj, zone_obj, resource_group, subnet['name'])
+                                gw_id = self.create_public_gateway(vpc_obj, zone_obj, resource_group, subnet['name'])
                             else:
                                 exit(1)
 
