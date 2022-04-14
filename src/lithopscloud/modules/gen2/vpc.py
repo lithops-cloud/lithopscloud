@@ -310,28 +310,33 @@ class VPCConfig(ConfigBuilder):
     @update_decorator
     def verify(self, base_config):
         # if vpc_id not specified will look for the first one
-        vpc_obj = self.ibm_vpc_client.get_vpc(id=self.defaults['vpc_id']).result
-        if not vpc_obj and self.defaults['vpc_id']:
-            raise Exception(f"failed to find vpc id {self.defaults['vpc_id']}")
+        breakpoint()
+
+        if self.defaults['vpc_id']:
+            vpc_obj = self.ibm_vpc_client.get_vpc(id=self.defaults['vpc_id']).result
         else:
-            # create new vpc
+            vpc_objects = self.ibm_vpc_client.list_vpcs().result
+            if vpc_objects['total_count'] > 0:
+                # return first vpc occurance
+                vpc_obj = vpc_objects['vpcs'][0]
+            else:
+                # create new vpc
+                res_group_objects = self.resource_service_client.list_resource_groups().get_result()['resources']
             
-            res_group_objects = self.resource_service_client.list_resource_groups().get_result()['resources']
+                print(f"Selected first found resource group {res_group_objects[0]['name']}")
+                resource_group = res_group_objects[0]
             
-            print(f"Selected first found resource group {res_group_objects[0]['name']}")
-            resource_group = res_group_objects[0]
-            
-            region = self._get_region()
-            print(f"\n\n\033[92mRegion {region} been selected\033[0m")
+                region = self._get_region()
+                print(f"\n\n\033[92mRegion {region} been selected\033[0m")
                         
-            vpc_obj = self.ibm_vpc_client.create_vpc(address_prefix_management='auto', classic_access=False,
+                vpc_obj = self.ibm_vpc_client.create_vpc(address_prefix_management='auto', classic_access=False,
                                         name="lithopscloud-default-vpc", resource_group=resource_group).get_result()
             
-            print(f"\n\n\033[92mVPC {vpc_obj['name']} been created\033[0m")
+                print(f"\n\n\033[92mVPC {vpc_obj['name']} been created\033[0m")
             
-            zones_objects = self.ibm_vpc_client.list_region_zones(region).get_result()['zones']
-            zone_obj = zones_objects[0]
-            self._create_vpc_peripherials(self.ibm_vpc_client, vpc_obj, zone_obj, resource_group)
+                zones_objects = self.ibm_vpc_client.list_region_zones(region).get_result()['zones']
+                zone_obj = zones_objects[0]
+                self._create_vpc_peripherials(self.ibm_vpc_client, vpc_obj, zone_obj, resource_group)
 
         subnet_objects = self.ibm_vpc_client.list_subnets().get_result()['subnets']
         return vpc_obj, subnet_objects[0]['zone'], subnet_objects[0]['id']
