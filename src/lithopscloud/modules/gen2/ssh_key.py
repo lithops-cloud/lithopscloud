@@ -178,12 +178,13 @@ class SshKeyConfig(ConfigBuilder):
             result = response.get_result()
             return result['id'], self.defaults['ssh_key_filename'], 'root'
         else:
-            # no ssh key information been provided by user, generate new keypair
-            ssh_key_data, ssh_key_path = generate_keypair(default_keyname)    
             # check if there default ssh key already in vpc
-            default_key = get_ssh_key(default_keyname)        
+            default_key = get_ssh_key(default_keyname)
             if default_key:
                 self.ibm_vpc_client.delete_key(id=default_key['id'])
+
+            # no ssh key information been provided by user, generate new keypair
+            ssh_key_data, ssh_key_path = generate_keypair(default_keyname)    
 
             response = self.ibm_vpc_client.create_key(public_key=ssh_key_data, name=default_keyname, resource_group={
                                         "id": resource_group_id}, type='rsa')
