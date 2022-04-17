@@ -13,7 +13,7 @@ MODULES = [RayApiKeyConfig, RayEndpointConfig, RayVPCConfig,
 from lithopscloud.main import load_base_config
 
 def load_config(backend, iam_api_key, region=None,
-                    image_id=None, profile_name=None,
+                    image_id=None, profile_name='bx2-2x8',
                     key_id=None, ssh_key_filename=None,
                     vpc_id=None, min_workers=0, max_workers=0):
     
