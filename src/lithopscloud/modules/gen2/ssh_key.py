@@ -9,6 +9,17 @@ from lithopscloud.modules.utils import (find_default, find_name_id,
                                         validate_exists, validate_not_empty)
 
 
+def generate_keypair(keyname):
+    filename = f"id.rsa.{keyname}"
+    os.system(f'ssh-keygen -b 2048 -t rsa -f {filename} -q -N ""')
+    print(f"\n\n\033[92mSSH key pair been generated\n")
+    print(f"private key: {os.path.abspath(filename)}")
+    print(f"public key {os.path.abspath(filename)}.pub\033[0m")
+    with open(f"{filename}.pub", 'r') as file:
+        ssh_key_data = file.read()
+    ssh_key_path = os.path.abspath(filename)
+    return ssh_key_data, ssh_key_path
+    
 def register_ssh_key(ibm_vpc_client, config):
     if config.get('ibm_vpc'):
         resource_group_id = config['ibm_vpc']['resource_group_id']
@@ -52,14 +63,7 @@ def register_ssh_key(ibm_vpc_client, config):
         with open(answers["public_key_path"], 'r') as file:
             ssh_key_data = file.read()
     else:
-        filename = f"id.rsa.{keyname}"
-        os.system(f'ssh-keygen -b 2048 -t rsa -f {filename} -q -N ""')
-        print(f"\n\n\033[92mSSH key pair been generated\n")
-        print(f"private key: {os.path.abspath(filename)}")
-        print(f"public key {os.path.abspath(filename)}.pub\033[0m")
-        with open(f"{filename}.pub", 'r') as file:
-            ssh_key_data = file.read()
-        ssh_key_path = os.path.abspath(filename)
+        ssh_key_data, ssh_key_path = generate_keypair(keyname)
 
     response = ibm_vpc_client.create_key(public_key=ssh_key_data, name=keyname, resource_group={
                                          "id": resource_group_id}, type='rsa')
@@ -129,31 +133,59 @@ class SshKeyConfig(ConfigBuilder):
 
     @update_decorator
     def verify(self, base_config):
-        if self.defaults['key_id']:
-            public_res = self.ibm_vpc_client.get_key(self.defaults['key_id']).get_result()['public_key'].split(' ')[1]
-            private_res = subprocess.getoutput([f"ssh-keygen -y -f {self.defaults['ssh_key_filename']} | cut -d' ' -f 2"])
+        default_keyname = 'lithopscloud-default'
+        
+        if base_config.get('ibm_vpc'):
+            resource_group_id = base_config['ibm_vpc']['resource_group_id']
+        else:
+            for available_node_type in base_config['available_node_types']:
+                resource_group_id = base_config['available_node_types'][available_node_type]['node_config']['resource_group_id']
+                break
+        
+        def get_ssh_key(name):
+            for key in self.ibm_vpc_client.list_keys().result['keys']:
+                if key['name'] == name:
+                    return key
+                
+        def is_pair(id, ssh_key_filename):
+            public_res = self.ibm_vpc_client.get_key(id).get_result()['public_key'].split(' ')[1]
+            private_res = subprocess.getoutput([f"ssh-keygen -y -f {ssh_key_filename} | cut -d' ' -f 2"])
+            return public_res == private_res
 
-            if not public_res == private_res:
+        # user specified both vpc key id and private key, just validate they ar ea pair
+        if self.defaults['key_id'] and self.defaults['ssh_key_filename']:
+            if not is_pair(self.defaults['key_id'], self.defaults['ssh_key_filename']):
                 raise errors.ValidationError(
                 '', reason=f"Private ssh key {self.defaults['ssh_key_filename']} and public key {self.defaults['key_id']} are not a pair")
             
             return self.defaults['key_id'], self.defaults['ssh_key_filename'], 'root'
-        else:
-            # we have only private key, generate public key from it
-            ssh_key_data = subprocess.getoutput([f"ssh-keygen -y -f {self.defaults['ssh_key_filename']} | cut -d' ' -f 2"])
+        elif self.defaults['ssh_key_filename']:
+            # user provided private key only, check if there default ssh key already in vpc
+            default_key = get_ssh_key(default_keyname)
+            # and it match the specified private key
+            if default_key and is_pair(default_key['id'], self.defaults['ssh_key_filename']):
+                return default_key['id'], self.defaults['ssh_key_filename'], 'root'
             
-            if base_config.get('ibm_vpc'):
-                resource_group_id = base_config['ibm_vpc']['resource_group_id']
-            else:
-                for available_node_type in base_config['available_node_types']:
-                    resource_group_id = base_config['available_node_types'][available_node_type]['node_config']['resource_group_id']
-                    break
-
-            keyname = 'lithopscloudkey'
-            response = self.ibm_vpc_client.create_key(public_key=ssh_key_data, name=keyname, resource_group={
-                                         "id": resource_group_id}, type='rsa')
-
-            print(f"\033[92mnew SSH key {keyname} been registered in vpc\033[0m")
-
+            # not a pair. delete not matching default key from vpc if exists
+            if default_key:
+                self.ibm_vpc_client.delete_key(id=default_key['id'])
+            # generate public key from private key
+            ssh_key_data = subprocess.getoutput([f"ssh-keygen -y -f {self.defaults['ssh_key_filename']} | cut -d' ' -f 2"])
+            response = self.ibm_vpc_client.create_key(public_key=ssh_key_data, name=default_keyname, resource_group={
+                                        "id": resource_group_id}, type='rsa')
+            print(f"\033[92mnew SSH key {default_keyname} been registered in vpc\033[0m")
             result = response.get_result()
             return result['id'], self.defaults['ssh_key_filename'], 'root'
+        else:
+            # no ssh key information been provided by user, generate new keypair
+            ssh_key_data, ssh_key_path = generate_keypair(default_keyname)    
+            # check if there default ssh key already in vpc
+            default_key = get_ssh_key(default_keyname)        
+            if default_key:
+                self.ibm_vpc_client.delete_key(id=default_key['id'])
+
+            response = self.ibm_vpc_client.create_key(public_key=ssh_key_data, name=default_keyname, resource_group={
+                                        "id": resource_group_id}, type='rsa')
+            print(f"\033[92mnew SSH key {default_keyname} been registered in vpc\033[0m")
+            result = response.get_result()
+            return result['id'], ssh_key_path, 'root'
