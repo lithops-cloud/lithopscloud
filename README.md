@@ -88,6 +88,11 @@ To utilize simply run ```lithopscloud --verify-config CONFIG_FILE_PATH -o OUTPUT
 </table>
 
 ### Using lithopscloud config tool programmatically
+Notice, not all fields are mandatory. Unspecified resources will be created automatically on the backend.
+
+E.g.
+If existing vpc id not provided - vpc will be created automatically with all required peripherial resources like security groups, gateway.. etc following minimal default requierments
+If ssh key details not provided - new ssh key pair will be generated and registered in ibm cloud
 
 ##### Lithops Gen2
 ```
@@ -100,14 +105,39 @@ generate_config(LITHOPS_GEN2, api_key, region, cos_bucket_name='kpavel-bucket', 
 
 ```
 
+Mandatory fields are: backend_type (LITHOPS_GEN2), api_key, region and cos_bucket.
+Minimal example:
+
+```
+from lithopscloud import generate_config
+from lithopscloud import LITHOPS_GEN2, RAY_GEN2
+
+api_key = <IAM_API_KEY>
+region = 'ca-tor'
+cos_bucket_name='kpavel-bucket'
+config_file = generate_config(LITHOPS_GEN2, api_key, region, cos_bucket_name=cos_bucket_name)
+```
+
 ###### Ray Gen2
 ```
 from lithopscloud import generate_config
-from lithopscloud import LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST
+from lithopscloud import RAY_GEN2
 
 api_key = '<IAM_API_KEY>'
 region = 'eu-de'
 generate_config(RAY_GEN2, api_key, region, image_id='r010-5a674db7-95aa-45c5-a2f1-a6aa9d7e93ad', key_id='r010-fe6cb103-60e6-46bc-9cb5-14e415990849', ssh_key_filename='/home/kpavel/.ssh/id_rsa', profile_name='bx2-2x8', vpc_id='r010-af1adda4-e4e5-4060-9aa2-7a0c981aff8e', min_workers=1, max_workers=1)
+```
+
+Mandatory fields are: backend_type (LITHOPS_GEN2), api_key, region and cos_bucket.
+Minimal example:
+
+```
+from lithopscloud import generate_config
+from lithopscloud import RAY_GEN2
+
+api_key = <IAM_API_KEY>
+region = 'eu-de'
+config_file = generate_config(RAY_GEN2, api_key, region)
 ```
 
 ## For Contributors
