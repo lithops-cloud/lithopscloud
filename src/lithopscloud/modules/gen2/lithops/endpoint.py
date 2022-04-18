@@ -9,7 +9,6 @@ class LithopsEndpointConfig(EndpointConfig):
 
     def __init__(self, base_config: Dict[str, Any]) -> None:
         super().__init__(base_config)
-#        breakpoint()
 
         base_endpoint = self.base_config['ibm_vpc'].get(
             'endpoint') if self.base_config.setdefault('ibm_vpc', {}) else None

@@ -23,4 +23,4 @@ class RayEndpointConfig(EndpointConfig):
 
     def update_config(self, endpoint):
         self.base_config['provider']['endpoint'] = endpoint
-        self.base_config['provider']['region'] = get_region_by_endpoint(endpoint)
+        self.base_config['provider']['region'] = ConfigBuilder.region

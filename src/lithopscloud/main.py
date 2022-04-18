@@ -103,8 +103,10 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
     base_config, modules = select_backend(input_file)
     base_config, modules = validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key)
 
-    if endpoint:
+    if endpoint and 'ibm_vpc' in base_config:
         base_config['ibm_vpc']['endpoint'] = endpoint
+    elif endpoint and 'provider' in base_config:
+        base_config['provider']['endpoint'] = endpoint
 
     for module in modules:
         next_module = module(base_config)
