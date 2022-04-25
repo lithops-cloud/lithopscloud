@@ -43,7 +43,7 @@ def delete_config(config):
     # delete subnet
     print('Deleting subnet')
     try:
-        ibm_vpc_client.delete_subnet(config['subnet_id'])
+        ibm_vpc_client.delete_subnet(vpc_config['subnet_id'])
     except ApiException as e:
         if e.code == 404:
             pass
@@ -53,12 +53,12 @@ def delete_config(config):
         time.sleep(5)
     
     # delete ssh key
-    ibm_vpc_client.delete_key(id=config['key_id'])
+    ibm_vpc_client.delete_key(id=vpc_config['key_id'])
     
     # delete vpc
     print('Deleting VPC')
     try:
-        ibm_vpc_client.delete_vpc(config['vpc_id'])
+        ibm_vpc_client.delete_vpc(vpc_config['vpc_id'])
     except ApiException as e:
         if e.code == 404:
             pass

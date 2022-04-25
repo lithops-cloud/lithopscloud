@@ -178,6 +178,7 @@ def delete_config(config_file_path):
         config = yaml.safe_load(f)
         
     from lithopscloud.modules.gen2 import delete_config
+    breakpoint()
     delete_config(config)      
     
 if __name__ == '__main__':

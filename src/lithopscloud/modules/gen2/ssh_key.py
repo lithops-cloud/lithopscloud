@@ -11,7 +11,11 @@ from lithopscloud.modules.utils import (find_default, find_name_id,
 
 def generate_keypair(keyname):
     filename = f"id.rsa.{keyname}"
-    os.remove(filename)
+    try:
+        os.remove(filename)
+    except Exception:
+        pass
+
     os.system(f'ssh-keygen -b 2048 -t rsa -f {filename} -q -N ""')
     print(f"\n\n\033[92mSSH key pair been generated\n")
     print(f"private key: {os.path.abspath(filename)}")
