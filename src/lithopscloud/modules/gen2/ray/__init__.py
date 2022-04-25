@@ -32,7 +32,21 @@ def load_config(backend, iam_api_key, region=None,
     base_config['max_workers'] = max_workers
     base_config['available_node_types']['ray_head_default']['min_workers'] = min_workers
     base_config['available_node_types']['ray_head_default']['max_workers'] = max_workers
-
-
     
     return base_config
+
+def parse_config(config):
+    res = {'iam_api_key': config['provider']['iam_api_key']}    
+    
+    for available_node_type in config['available_node_types']:
+        res['vpc_id'] = config['available_node_types'][available_node_type]['node_config']['vpc_id']
+        res['key_id'] = config['available_node_types'][available_node_type]['node_config']['key_id']     
+        res['subnet_id'] = config['available_node_types'][available_node_type]['node_config']['subnet_id']
+    
+    res['endpoint'] = config['provider']['endpoint']
+
+    if 'iam_endpoint' in config['provider']:
+        res['iam_endpoint'] = config['provider']['iam_endpoint']
+        
+    return res
+    
