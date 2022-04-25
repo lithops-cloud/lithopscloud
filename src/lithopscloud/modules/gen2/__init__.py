@@ -10,7 +10,7 @@ def delete_config(config):
     if 'provider' in config:
         from lithopscloud.modules.gen2.ray import parse_config
     elif 'ibm_vpc' in config:
-        from lithopscloud.modules.gen2.ray import parse_config
+        from lithopscloud.modules.gen2.lithops import parse_config
     else:
         raise Exception('Config file not supported')
     
@@ -36,13 +36,8 @@ def delete_config(config):
         
         # delete instance        
         ibm_vpc_client.delete_instance(ins['id'])
-    
-    # delete gateway?
-    breakpoint()
-    gateways = ibm_vpc_client.list_public_gateways().get_result()
-    for gw in gateways['public_gateways']:
-        if gw['vpc']['id'] == vpc_config['vpc_id']:
-            ibm_vpc_client.delete_public_gateway(gw['id'])
+
+    time.sleep(5)
     
     # delete subnet
     print('Deleting subnet')
@@ -53,11 +48,28 @@ def delete_config(config):
             pass
         else:
             raise e
-    
-        time.sleep(5)
+
+        time.sleep(25)
+
+    # delete gateway?
+    print('Deleting gateway')
+    gateways = ibm_vpc_client.list_public_gateways().get_result()
+    for gw in gateways['public_gateways']:
+        if gw['vpc']['id'] == vpc_config['vpc_id']:
+            ibm_vpc_client.delete_public_gateway(gw['id'])
+
+    time.sleep(15)
     
     # delete ssh key
-    ibm_vpc_client.delete_key(id=vpc_config['key_id'])
+    try:
+        ibm_vpc_client.delete_key(id=vpc_config['key_id'])
+    except ApiException as e:
+        if e.code == 404:
+            pass
+        else:
+            raise e
+
+        time.sleep(5)
     
     # delete vpc
     print('Deleting VPC')
