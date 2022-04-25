@@ -39,6 +39,10 @@ def delete_config(config):
     
     # delete gateway?
     breakpoint()
+    gateways = ibm_vpc_client.list_public_gateways().get_result()
+    for gw in gateways['public_gateways']:
+        if gw['vpc']['id'] == vpc_config['vpc_id']:
+            ibm_vpc_client.delete_public_gateway(gw['id'])
     
     # delete subnet
     print('Deleting subnet')
