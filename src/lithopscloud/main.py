@@ -171,6 +171,14 @@ def generate_config(backend_name, *args, **kwargs):
 
     return output_file
 
+# currently implemented only for lithops and ray gen2 backends
+def delete_config(config_file_path):
+    config = None
+    with open(config_file_path) as f:
+        config = yaml.safe_load(f)
+        
+    from lithopscloud.modules.gen2 import delete_config
+    delete_config(config)      
     
 if __name__ == '__main__':
     try:

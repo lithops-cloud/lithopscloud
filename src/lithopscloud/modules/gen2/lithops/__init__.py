@@ -38,3 +38,17 @@ def load_config(backend, iam_api_key, region=None,
     base_config['ibm_vpc']['endpoint'] = f'https://{region}.iaas.cloud.ibm.com'
     
     return base_config
+
+def parse_config(config):
+    res = {'iam_api_key': config['ibm']['iam_api_key']}    
+    
+    res['vpc_id'] = config['ibm_vpc']['vpc_id']
+    res['key_id'] = config['ibm_vpc']['key_id']
+    res['subnet_id'] = config['ibm_vpc']['subnet_id']
+    
+    res['endpoint'] = config['ibm_vpc']['endpoint']
+
+    if 'iam_endpoint' in config['ibm']:
+        res['iam_endpoint'] = config['ibm']['iam_endpoint']
+
+    return res
