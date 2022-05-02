@@ -11,7 +11,7 @@ class RayImageConfig(ImageConfig):
                 self.defaults['image_id'] = self.base_config['available_node_types'][available_node_type]['node_config'].get('image_id')
                 break
     
-    def update_config(self, image_id, minimum_provisioned_size):
+    def update_config(self, image_id, minimum_provisioned_size, custom_image):
         #minimum_provisioned_size will be used once non default image used
         if self.base_config.get('available_node_types'):
             for available_node_type in self.base_config['available_node_types']:
@@ -20,3 +20,7 @@ class RayImageConfig(ImageConfig):
         else:
             self.base_config['available_node_types']['ray_head_default']['node_config']['image_id'] = image_id
             self.base_config['available_node_types']['ray_head_default']['node_config']['boot_volume_capacity'] = minimum_provisioned_size
+
+        # if custom image, all setup commands should be removed
+        if custom_image:
+            self.base_config['setup_commands'] = ['rm -f ~/.ray/tags.json']
