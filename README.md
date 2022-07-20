@@ -87,14 +87,7 @@ To utilize simply run ```lithopscloud --verify-config CONFIG_FILE_PATH -o OUTPUT
 </tr>
 </table>
 
-### Using lithopscloud config tool programmatically
-Notice, not all fields are mandatory. Unspecified resources will be created automatically on the backend.
-
-E.g.
-If existing vpc id not provided - vpc will be created automatically with all required peripherial resources like security groups, gateway.. etc following minimal default requierments
-If ssh key details not provided - new ssh key pair will be generated and registered in ibm cloud
-
-### Using lithopscloud to generate config file without interaction
+### Using lithopscloud to generate config file without user interaction
 In order to let lithopscloud generate config file based on some defaults and create vpc and all its peripherial assets automatically, please run:
 
 ```
@@ -102,6 +95,14 @@ lithopscloud -a <API_KEY> -b <BACKEND> --defaults
 ```
 
 * currently, lithops `gen2` is the only supported backend
+
+### Using lithopscloud config tool programmatically
+Notice, not all fields are mandatory. Unspecified resources will be created automatically on the backend.
+
+E.g.
+If existing vpc id not provided - vpc will be created automatically with all required peripherial resources like security groups, gateway.. etc following minimal default requierments
+If ssh key details not provided - new ssh key pair will be generated and registered in ibm cloud
+
 
 ##### Lithops Gen2
 ```
