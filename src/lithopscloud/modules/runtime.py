@@ -11,3 +11,8 @@ class RuntimeConfig(ConfigBuilder):
                               default=self.defaults.get('runtime'))['answer']
 
         return runtime
+    
+    @update_decorator
+    def create_default(self):
+        print(f"Selected default runtime image {self.defaults.get('runtime')}")
+        return self.defaults.get('runtime')

@@ -4,6 +4,7 @@ from ibm_cloud_sdk_core import ApiException
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_vpc import VpcV1
 
+
 def delete_config(config):
 
     # parse config

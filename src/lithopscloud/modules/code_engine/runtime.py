@@ -191,4 +191,8 @@ class CERuntimeConfig(RuntimeConfig):
     def update_config(self, runtime) -> Dict[str, Any]:
         self.base_config['code_engine']['runtime'] = runtime
         return self.base_config
+    
+    def create_default(self):
+        NotImplementedError("This backend doesn't support it yet")
+
 

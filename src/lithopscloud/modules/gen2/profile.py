@@ -32,3 +32,7 @@ class ProfileConfig(ConfigBuilder):
         if not profile:
             raise Exception(f'Specified profile {profile_name} not found in the profile list {instance_profile_objects}')
         return profile_name
+
+    @update_decorator    
+    def create_default(self):
+        return 'bx2-2x8'

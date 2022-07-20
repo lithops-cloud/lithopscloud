@@ -1,3 +1,4 @@
+import uuid
 import sys
 from typing import Any, Dict
 import ibm_boto3
@@ -9,6 +10,9 @@ from lithopscloud.modules.utils import free_dialog, CACHE, color_msg, Color, NEW
 from lithopscloud.modules.utils import inquire_user
 
 BUCKET_REGIONS = []  # regions in which bucket can be created
+DEFAULT_LITHOPS_COS = 'DefaultLithopsCos'
+DEFAULT_LITHOPS_BUCKET = 'lithops-bucket'
+DEFAULT_LITHOPS_BUCKET_LOCATION = 'us-east'
 
 class CosConfig(ConfigBuilder):
     
@@ -94,18 +98,21 @@ class CosConfig(ConfigBuilder):
         print(color_msg("\nIBM Cloud Object Storage was configured successfully", color=Color.LIGHTGREEN))
         return self.base_config
 
-    def create_cos_instance(self):
+    def create_cos_instance(self, auto=False):
         """creates a cloud object storage instance, under a specified resource group and returns its user chosen name"""
         plan_type = {'standard': '744bfc56-d12c-4866-88d5-dac9139e0e5d', 'lite': '2fdf0c08-2d32-4f46-84b5-32e0c92fffd8'}
         cos_instance_created = False
 
         while not cos_instance_created:
-
-            plan = inquire_user('Please choose a pricing tier',
+            plan = 'lite'
+            cos_name = DEFAULT_LITHOPS_COS
+            
+            if not auto:
+                plan = inquire_user('Please choose a pricing tier',
                                 ['lite (restricted to one per account)', 'standard (requires a paid account)']
                                 , handle_strings=True)
-            plan = plan_type[plan.split(' ')[0]]
-            cos_name = free_dialog("Please name your COS instance")['answer']
+                plan = plan_type[plan.split(' ')[0]]
+                cos_name = free_dialog("Please name your COS instance")['answer']
 
             try:
                 response = self.resource_controller_service.create_resource_instance(
@@ -147,15 +154,49 @@ class CosConfig(ConfigBuilder):
             base_config['ibm_cos']['region'] = bucket_location
             
         return base_config
+    
+    def create_default(self):
+        
+        bucket_location = DEFAULT_LITHOPS_BUCKET_LOCATION
+        print(color_msg("\n\nConfiguring IBM cloud object storage:\n", color=Color.YELLOW))
+        s3_client = self._init_boto3_client(bucket_location)  # initiate using a randomly chosen region
+
+        print("Obtaining existing COS instances...")
+
+        cos_instances = get_cos_instances(self.get_resources())
+        if len(cos_instances) == 0:
+            ibm_service_instance_id = self.create_cos_instance(auto=True)
+        else:
+            ibm_service_instance_id = cos_instances[0]['id']
+
+        client_response = s3_client.list_buckets(IBMServiceInstanceId=ibm_service_instance_id)
+
+        buckets = client_response['Buckets']
+        chosen_bucket = next((b['Name'] for b in buckets if DEFAULT_LITHOPS_BUCKET in b['Name']), None)
+        
+        if not chosen_bucket:
+            print(f'Creating a bucket with prefix {DEFAULT_LITHOPS_BUCKET} in the {DEFAULT_LITHOPS_BUCKET_LOCATION} of the cos instance {ibm_service_instance_id}' )
+            # changing location of the client to create a bucket in requested region.
+            s3_client = self._init_boto3_client(DEFAULT_LITHOPS_BUCKET_LOCATION)
+            chosen_bucket = create_bucket(s3_client, ibm_service_instance_id, auto=True)
+
+        self.base_config['ibm_cos'].update({'storage_bucket': chosen_bucket, 'region': bucket_location})
+        self.base_config['lithops']['storage'] = 'ibm_cos'
+
+        print(color_msg("\nIBM Cloud Object Storage was configured successfully", color=Color.LIGHTGREEN))
+        
+        return self.base_config
 
 
-def create_bucket(s3_client, ibm_service_instance_id):
+def create_bucket(s3_client, ibm_service_instance_id, auto=False):
     """Creates a bucket and returns its name"""
 
     bucket_created = False
     while not bucket_created:
         try:
-            chosen_bucket = free_dialog("Please choose a name for your new bucket")['answer']
+            chosen_bucket = f'{DEFAULT_LITHOPS_BUCKET}-{str(uuid.uuid4())[:4]}'
+            if not auto:
+                chosen_bucket = free_dialog("Please choose a name for your new bucket")['answer']
             s3_client.create_bucket(Bucket=f'{chosen_bucket}', IBMServiceInstanceId=ibm_service_instance_id)
             bucket_created = True
         except TypeError:  # allow user to exit config tool using ctrl+c

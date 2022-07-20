@@ -20,7 +20,7 @@ pip install lithopscloud
 Use the configuration tool as follows
 
 ```
-lithopscloud [--iam-api-key IAM_API_KEY] [-i INPUT_FILE] [-o OUTPUT_PATH] [--verify_config CONFIG_FILE_PATH] [--version]
+lithopscloud [--iam-api-key IAM_API_KEY] [-i INPUT_FILE] [-o OUTPUT_PATH] [--verify_config CONFIG_FILE_PATH] [--version] [--backend backend] [--defaults] 
 ```
 Get a short description of the available flags via ```lithopscloud --help```
 
@@ -93,6 +93,15 @@ Notice, not all fields are mandatory. Unspecified resources will be created auto
 E.g.
 If existing vpc id not provided - vpc will be created automatically with all required peripherial resources like security groups, gateway.. etc following minimal default requierments
 If ssh key details not provided - new ssh key pair will be generated and registered in ibm cloud
+
+### Using lithopscloud to generate config file without interaction
+In order to let lithopscloud generate config file based on some defaults and create vpc and all its peripherial assets automatically, please run:
+
+```
+lithopscloud -a <API_KEY> -b <BACKEND> --defaults
+```
+
+* currently, lithops `gen2` is the only supported backend
 
 ##### Lithops Gen2
 ```

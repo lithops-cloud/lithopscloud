@@ -10,3 +10,6 @@ class LocalHost(ConfigBuilder):
 
     def run(self, api_key=None) -> Dict[str, Any]:
         return self.base_config
+    
+    def create_default(self):
+        NotImplementedError("This backend doesn't support it yet")

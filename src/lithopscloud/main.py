@@ -19,38 +19,54 @@ backends = [
     {'name': LOCAL_HOST, 'path': 'local_host'}
 ]
 
-def select_backend(input_file):
-    # select backend
-    base_config = {}
+backends_str = {'gen2': LITHOPS_GEN2,
+                'cf': LITHOPS_CF,
+                'ce': LITHOPS_CE,
+                'ray': RAY_GEN2,
+                'local': LOCAL_HOST}
 
-    if input_file:
-        with open(input_file) as f:
-            base_config = yaml.safe_load(f)
-    # TODO: also verify existence of base_config['lithops']['backend']
+
+def select_backend(input_file, backend_short):
+    backend = None
     default = None
-    if base_config.get('lithops'):
-        mode = base_config['lithops']['mode'] if base_config['lithops'].get(
-            'mode') else None
-        if mode == 'standalone':
-            default = LITHOPS_GEN2
-        elif mode == 'code_engine':
-            default = LITHOPS_CE
-        elif mode == 'ibm_cf':
-            default = LITHOPS_CF
-    elif base_config.get('provider'):
-        default = RAY_GEN2
+    if backend_short:
+        # find in backends structure
+        b_name = backends_str[backend_short]
+        backend = next((b for b in backends if b['name'] == b_name), None)
+        if not backend:
+            error(f"Provided backend {backend_short} not in supported backends list {backends_str}")
+    else:
+        # select backend
+        base_config = {}
 
-    backend = get_option_from_list("Please select a compute backend", backends, default=default)
+        if input_file:
+            with open(input_file) as f:
+                base_config = yaml.safe_load(f)
+        # TODO: also verify existence of base_config['lithops']['backend']
+        default = None
+        if base_config.get('lithops'):
+            mode = base_config['lithops']['mode'] if base_config['lithops'].get(
+                'mode') else None
+            if mode == 'standalone':
+                default = LITHOPS_GEN2
+            elif mode == 'code_engine':
+                default = LITHOPS_CE
+            elif mode == 'ibm_cf':
+                default = LITHOPS_CF
+        elif base_config.get('provider'):
+            default = RAY_GEN2
 
-    # in case input file didn't match selected option we either need to raise error or start it from scratch (defaults), currently startin from defaults
-    # import pdb;pdb.set_trace()
+        backend = get_option_from_list("Please select a compute backend", backends, default=default)
+
+        # in case input file didn't match selected option we either need to raise error or start it from scratch (defaults), currently startin from defaults
+        # import pdb;pdb.set_trace()
     if backend['name'] != default:
         base_config = load_base_config(backend)
 
     # now find the right modules
-    modules = importlib.import_module(f"lithopscloud.modules.{backend['path']}").MODULES
+    backend_pkg = importlib.import_module(f"lithopscloud.modules.{backend['path']}")
 
-    return base_config, modules
+    return base_config, backend_pkg
 
 def load_base_config(backend):
     backend_path = backend['path'].replace('.', '/')
@@ -86,7 +102,10 @@ def validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, c
 @click.option('--compute-iam-endpoint', help='IAM endpoint url used for compute instead of default https://iam.cloud.ibm.com')
 @click.option('--cos-iam-api-key', help='IAM_API_KEY used to communicate with cos separately')
 @click.option('--endpoint', help='IBM Cloud API endpoint')
-def builder(iam_api_key, output_file, input_file, version, verify_config, compute_iam_endpoint, cos_iam_api_key, endpoint):
+@click.option('--defaults', help=f'Create defaults if not exist and generate default config', is_flag=True)
+@click.option('--backend', '-b', help=f'One of following backends: {backends_str}')
+def builder(iam_api_key, output_file, input_file, version, verify_config, compute_iam_endpoint, cos_iam_api_key, endpoint, backend, defaults):
+    
     if version:
         print(f"{pkg_resources.get_distribution('lithopscloud').project_name} "
               f"{pkg_resources.get_distribution('lithopscloud').version}")
@@ -100,7 +119,10 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
         verify_config_file(verify_config, output_file)
         exit(0)
 
-    base_config, modules = select_backend(input_file)
+    base_config, backend_pkg = select_backend(input_file, backend)
+    
+    modules = backend_pkg.MODULES
+    base_config['create_defaults'] = defaults
     base_config, modules = validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, cos_iam_api_key)
 
     if endpoint and 'ibm_vpc' in base_config:
@@ -110,14 +132,22 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
 
     for module in modules:
         next_module = module(base_config)
-        base_config = next_module.run()
+        
+        if defaults:
+            base_config = next_module.create_default()
+        else:
+            base_config = next_module.run()
 
     with open(output_file, 'w') as outfile:
+        del base_config['create_defaults']
         yaml.dump(base_config, outfile, default_flow_style=False)
 
-    print("\n\n=================================================")
-    print(color_msg(f"Cluster config file: {output_file}", color=Color.LIGHTGREEN))
-    print("=================================================")
+    if hasattr(backend_pkg, 'finish_message'):
+        print(backend_pkg.finish_message(output_file))
+    else:
+        print("\n\n=================================================")
+        print(color_msg(f"Cluster config file: {output_file}", color=Color.LIGHTGREEN))
+        print("=================================================")
 
 def error(msg):
     print(msg)

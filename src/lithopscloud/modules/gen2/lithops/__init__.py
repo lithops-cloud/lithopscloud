@@ -7,11 +7,20 @@ from lithopscloud.modules.cos import CosConfig
 from lithopscloud.modules.gen2.lithops.runtime import VPCRuntimeConfig
 from lithopscloud.modules.gen2.lithops.dismantle import DismantleConfig
 from lithopscloud.modules.gen2.lithops.profile import LithopsProfileConfig
+from lithopscloud.main import load_base_config
+from lithopscloud.modules.utils import color_msg, Color
 
 MODULES = [ApiKeyConfig, LithopsEndpointConfig, LithopsVPCConfig, LithopsSshKeyConfig, LithopsImageConfig, CosConfig, VPCRuntimeConfig, DismantleConfig, LithopsProfileConfig]
 
-from lithopscloud.main import load_base_config
-
+def finish_message(output_file):
+    return "\n\n================================================================\n" + \
+        color_msg(f"Cluster config file: {output_file}",
+                  color=Color.LIGHTGREEN) + \
+        "\n\nTo start using it, you may run: " + \
+        color_msg(f"export LITHOPS_CONFIG_FILE={output_file}",
+                  color=Color.YELLOW) + \
+        "\n================================================================"
+        
 def load_config(backend, iam_api_key, region=None,
                     image_id=None, profile_name='bx2-2x8',
                     key_id=None, ssh_key_filename=None,

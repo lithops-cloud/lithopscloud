@@ -20,8 +20,6 @@ class LithopsVPCConfig(VPCConfig):
         self.base_config['ibm_vpc']['resource_group_id'] = vpc_obj['resource_group']['id']
         self.base_config['ibm_vpc']['security_group_id'] = sec_group_id
         self.base_config['ibm_vpc']['subnet_id'] = subnet_id
-
-
-        
+   
 
 

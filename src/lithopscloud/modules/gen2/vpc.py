@@ -73,7 +73,7 @@ class VPCConfig(ConfigBuilder):
             'port_max': port_max
         }
 
-    def _create_vpc(self, ibm_vpc_client, resource_group, vpc_default_name):
+    def _create_vpc(self, ibm_vpc_client, resource_group, vpc_default_name, auto=False):
 
         q = [
             inquirer.Text('name', message="Please, type a name for the new VPC",
@@ -82,7 +82,11 @@ class VPCConfig(ConfigBuilder):
                           'yes', 'no'], default='yes')
         ]
 
-        answers = inquirer.prompt(q, raise_keyboard_interrupt=True)
+        answers = {'answer': 'yes',
+                   'name': vpc_default_name}
+        if not auto:
+            answers = inquirer.prompt(q, raise_keyboard_interrupt=True)
+        
         if answers['answer'] == 'yes':
 
             @spinner
@@ -176,54 +180,59 @@ class VPCConfig(ConfigBuilder):
 
         return gateway_id
 
+    def _select_resource_group(self, auto=False):
+        # find resource group
+
+        @spinner
+        def get_res_group_objects():
+            return self.resource_service_client.list_resource_groups().get_result()['resources']
+
+        res_group_objects = get_res_group_objects()
+        if auto:
+            return res_group_objects[0]['id']
+
+        default = find_default(
+            self.defaults, res_group_objects, id='resource_group_id')
+        res_group_obj = get_option_from_list(
+            "Select resource group", res_group_objects, default=default)
+        return res_group_obj['id']
+
+    def _select_zone(self, vpc_id, region, auto=False):
+        # find availability zone
+        @spinner
+        def get_zones_and_subnets():
+            zones_objects = self.ibm_vpc_client.list_region_zones(region).get_result()['zones']
+            all_subnet_objects = self.ibm_vpc_client.list_subnets().get_result()['subnets']
+            return zones_objects, all_subnet_objects
+
+        zones_objects, all_subnet_objects = get_zones_and_subnets()
+        
+        if auto:
+            return zones_objects[0]
+
+        if vpc_id:
+            # filter out zones that given vpc has no subnets in
+            zones = [s_obj['zone']['name']
+                        for s_obj in all_subnet_objects if s_obj['vpc']['id'] == vpc_id]
+            zones_objects = [
+                z for z in zones_objects if z['name'] in zones]
+
+        try:
+            default = find_default(
+                self.defaults, zones_objects, name='zone_name')
+            zone_obj = get_option_from_list(
+                "Choose availability zone", zones_objects, default=default)
+        except:
+            raise Exception(
+                "Failed to list zones for selected vpc {vpc_id}, please check whether vpc missing subnet")
+
+        return zone_obj
+
     def _select_vpc(self, node_config, region):
 
         vpc_id, vpc_name, zone_obj, sg_id, resource_group = None, None, None, None, None
         ibm_vpc_client = self.ibm_vpc_client
-
-        def select_zone(vpc_id):
-            # find availability zone
-            @spinner
-            def get_zones_and_subnets():
-                zones_objects = ibm_vpc_client.list_region_zones(region).get_result()['zones']
-                all_subnet_objects = ibm_vpc_client.list_subnets().get_result()['subnets']
-                return zones_objects, all_subnet_objects
-
-            zones_objects, all_subnet_objects = get_zones_and_subnets()
-
-            if vpc_id:
-                # filter out zones that given vpc has no subnets in
-                zones = [s_obj['zone']['name']
-                         for s_obj in all_subnet_objects if s_obj['vpc']['id'] == vpc_id]
-                zones_objects = [
-                    z for z in zones_objects if z['name'] in zones]
-
-            try:
-                default = find_default(
-                    self.defaults, zones_objects, name='zone_name')
-                zone_obj = get_option_from_list(
-                    "Choose availability zone", zones_objects, default=default)
-            except:
-                raise Exception(
-                    "Failed to list zones for selected vpc {vpc_id}, please check whether vpc missing subnet")
-
-            return zone_obj
-
-        def select_resource_group():
-            # find resource group
-
-            @spinner
-            def get_res_group_objects():
-                return self.resource_service_client.list_resource_groups().get_result()['resources']
-
-            res_group_objects = get_res_group_objects()
-
-            default = find_default(
-                self.defaults, res_group_objects, id='resource_group_id')
-            res_group_obj = get_option_from_list(
-                "Select resource group", res_group_objects, default=default)
-            return res_group_obj['id']
-        
+       
         while True:
             CREATE_NEW = 'Create new VPC'
 
@@ -237,10 +246,10 @@ class VPCConfig(ConfigBuilder):
             vpc_name, vpc_id = find_name_id(
                 vpc_objects, "Select VPC", obj_id=vpc_id, do_nothing=CREATE_NEW, default=default)
 
-            zone_obj = select_zone(vpc_id)
+            zone_obj = self._select_zone(vpc_id, region)
 
             if not vpc_name:
-                resource_group_id = select_resource_group()
+                resource_group_id = self._select_resource_group()
                 resource_group = {'id': resource_group_id}
 
                 # find next default vpc name
@@ -339,4 +348,44 @@ class VPCConfig(ConfigBuilder):
 
         subnet_objects = self.ibm_vpc_client.list_subnets().get_result()['subnets']
         return vpc_obj, subnet_objects[0]['zone'], subnet_objects[0]['id']
+    
+    @update_decorator
+    def create_default(self):
+        region = self._get_region()
+        resource_group_id = self._select_resource_group(auto=True)
+        resource_group = {'id': resource_group_id}
 
+        vpc_objects = self.ibm_vpc_client.list_vpcs().get_result()['vpcs']
+        vpc_obj = next((vpc_obj for vpc_obj in vpc_objects if vpc_obj['name'] == self.vpc_name), None)
+        
+        if vpc_obj:
+            # TODO: validate existing
+            print(f"\n\n\033[92mUsing existing VPC with default name {vpc_obj['name']} \033[0m")
+        else:
+            vpc_obj = self._create_vpc(self.ibm_vpc_client,
+                                    resource_group, self.vpc_name, auto=True)
+            if not vpc_obj:
+                raise Exception(f"Failed to create VPC {self.vpc_name}")
+            else:
+                print(f"\n\n\033[92mVPC {vpc_obj['name']} been created\033[0m")
+
+            zone_obj = self._select_zone(vpc_obj['id'], region, auto=True)
+            self._create_vpc_peripherials(self.ibm_vpc_client,
+                                        vpc_obj,
+                                        zone_obj,
+                                        resource_group)
+        
+        zone_obj = self._select_zone(vpc_obj['id'], region, auto=True)
+        CACHE['resource_group_id'] = resource_group['id']
+        
+        all_subnet_objects = self.ibm_vpc_client.list_subnets().get_result()[
+            'subnets']
+
+        # filter only subnets from selected availability zone
+        subnet_objects = [s_obj for s_obj in all_subnet_objects if s_obj['zone']
+                          ['name'] == zone_obj['name'] and s_obj['vpc']['id'] == vpc_obj['id']]
+
+        if not subnet_objects:
+            raise f'Failed to find subnet for vpc {vpc_obj["name"]} in zone {zone_obj["name"]}'
+
+        return vpc_obj, zone_obj, subnet_objects[0]['id']
