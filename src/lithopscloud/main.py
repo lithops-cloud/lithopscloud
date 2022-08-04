@@ -26,7 +26,7 @@ backends_str = {'gen2': LITHOPS_GEN2,
                 'local': LOCAL_HOST}
 
 
-def select_backend(input_file, backend_short):
+def select_backend(input_file, backend_short, default_config_suffix=''):
     backend = None
     default = None
     if backend_short:
@@ -57,21 +57,24 @@ def select_backend(input_file, backend_short):
             default = RAY_GEN2
 
         backend = get_option_from_list("Please select a compute backend", backends, default=default)
+        # update all related after ray gen2 pr merged
+        if default_config_suffix and backend['name'] != RAY_GEN2:
+            default_config_suffix = ''
 
         # in case input file didn't match selected option we either need to raise error or start it from scratch (defaults), currently startin from defaults
         # import pdb;pdb.set_trace()
     if backend['name'] != default:
-        base_config = load_base_config(backend)
+        base_config = load_base_config(backend, default_config_suffix)
 
     # now find the right modules
     backend_pkg = importlib.import_module(f"lithopscloud.modules.{backend['path']}")
 
     return base_config, backend_pkg
 
-def load_base_config(backend):
+def load_base_config(backend, default_config_suffix=''):
     backend_path = backend['path'].replace('.', '/')
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    input_file = f"{dir_path}/modules/{backend_path}/defaults.yaml"
+    input_file = f"{dir_path}/modules/{backend_path}/defaults{default_config_suffix}.yaml"
 
     base_config = None
     with open(input_file) as f:
@@ -104,7 +107,8 @@ def validate_api_keys(base_config, modules, iam_api_key, compute_iam_endpoint, c
 @click.option('--endpoint', help='IBM Cloud API endpoint')
 @click.option('--defaults', help=f'Create defaults if not exist and generate default config', is_flag=True)
 @click.option('--backend', '-b', help=f'One of following backends: {backends_str}')
-def builder(iam_api_key, output_file, input_file, version, verify_config, compute_iam_endpoint, cos_iam_api_key, endpoint, backend, defaults):
+@click.option('--pr', '-g', help=f'Temporary workaround for ray gen2 only. If specified, use provider setup from PR github', is_flag=True, default=False)
+def builder(iam_api_key, output_file, input_file, version, verify_config, compute_iam_endpoint, cos_iam_api_key, endpoint, backend, defaults, pr):
     
     if version:
         print(f"{pkg_resources.get_distribution('lithopscloud').project_name} "
@@ -119,7 +123,11 @@ def builder(iam_api_key, output_file, input_file, version, verify_config, comput
         verify_config_file(verify_config, output_file)
         exit(0)
 
-    base_config, backend_pkg = select_backend(input_file, backend)
+    default_config_suffix = ''
+    if pr:
+        default_config_suffix = '_pr'
+
+    base_config, backend_pkg = select_backend(input_file, backend, default_config_suffix)
     
     modules = backend_pkg.MODULES
     base_config['create_defaults'] = defaults
