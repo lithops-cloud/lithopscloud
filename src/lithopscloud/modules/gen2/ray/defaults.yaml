@@ -77,7 +77,6 @@ head_node_type: ray_head_default
 # Files or directories to copy to the head and worker nodes. The format is a
 # dictionary from REMOTE_PATH: LOCAL_PATH, e.g.
 file_mounts: {
-    # TODO: this one will be removed after gen2 contribution
     #"/path2/on/remote/machine": "/path2/on/local/machine", # points to root folder of your local ray repository, e.g "/root/ray": "/home/kpavel/ray" 
 }
 
