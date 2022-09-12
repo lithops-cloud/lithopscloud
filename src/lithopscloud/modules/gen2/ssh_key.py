@@ -13,7 +13,7 @@ from ibm_cloud_sdk_core import ApiException
 DEFAULT_KEY_NAME = 'lithops-default'
         
 def generate_keypair(keyname):
-    
+    """Returns newly generated public ssh-key's contents and private key's path"""
     home = str(Path.home())
     filename = f"{home}{os.sep}.ssh{os.sep}id.rsa.{keyname}"
     try:
@@ -31,11 +31,14 @@ def generate_keypair(keyname):
     return ssh_key_data, ssh_key_path
 
 def get_ssh_key(ibm_vpc_client, name):
+    """Returns ssh key matching specified name, stored in the VPC associated with the vpc_client"""
     for key in ibm_vpc_client.list_keys().result['keys']:
         if key['name'] == name:
             return key
                     
 def register_ssh_key(ibm_vpc_client, config, auto=False):
+    """Returns the key's name on the VPC platform, it's public key's contents and the local path to it.
+        Registers an either existing or newly generated ssh-key to a specific VPC. """
     if config.get('ibm_vpc'):
         resource_group_id = config['ibm_vpc']['resource_group_id']
     else:

@@ -12,9 +12,8 @@ class DismantleConfig(ConfigBuilder):
 
     def run(self) -> Dict[str, Any]:
         print('\n')
-
-        default_auto_dismantle = self.base_config['standalone'].get(
-            'auto_dismantle')
+        # TODO - run test to verify necessity 
+        # default_auto_dismantle = self.base_config['standalone'].get('auto_dismantle')
         default_delete_on_dismantle = self.base_config['ibm_vpc'].get(
             'delete_on_dismantle', True)
         default_mode = self.base_config['standalone'].get('exec_mode', 'create')

@@ -14,7 +14,7 @@ class VPCConfig(ConfigBuilder):
         super().__init__(base_config)
         self.base_config = base_config
 
-        self.sg_rules = {}
+        self.sg_rules = {}  # security group rules.
         self.vpc_name = 'cluster-vpc'
         
     def _get_region(self):
@@ -50,7 +50,7 @@ class VPCConfig(ConfigBuilder):
         direction, protocol, port = missing_rule.split('_')
         remote = {"cidr_block": "0.0.0.0/0"}
 
-        try:
+        try: # port number was specified
             port = int(port)
             port_min = port
             port_max = port
@@ -84,10 +84,10 @@ class VPCConfig(ConfigBuilder):
 
         answers = {'answer': 'yes',
                    'name': vpc_default_name}
-        if not auto:
+        if not auto:    # use default answers, i.e. create a new VPC and choose default VPC name
             answers = inquirer.prompt(q, raise_keyboard_interrupt=True)
         
-        if answers['answer'] == 'yes':
+        if answers['answer'] == 'yes':  # create a new VPC
 
             @spinner
             def _create():
@@ -98,7 +98,7 @@ class VPCConfig(ConfigBuilder):
         else:
             return None
 
-    def _create_vpc_peripherials(self, ibm_vpc_client, vpc_obj, zone_obj, resource_group):
+    def _create_vpc_peripherals(self, ibm_vpc_client, vpc_obj, zone_obj, resource_group):
         vpc_name = vpc_obj['name']
         vpc_id = vpc_obj['id']
         # create subnet
@@ -111,6 +111,7 @@ class VPCConfig(ConfigBuilder):
             vpc_id).result
         address_prefixes = res['address_prefixes']
 
+        # searching for the CIDR block (internal ip range) matching the specified zone of a VPC (whose region has already been set) 
         for address_prefix in address_prefixes:
             if address_prefix['zone']['name'] == zone_obj['name']:
                 ipv4_cidr_block = address_prefix['cidr']
@@ -146,13 +147,13 @@ class VPCConfig(ConfigBuilder):
         ibm_vpc_client.update_security_group(
             sg_id, security_group_patch={'name': sg_name})
 
-        # add rule to open tcp traffic inside security group
+        # add rule to open private tcp traffic between VSIs within the security group
         sg_rule_prototype = self._build_security_group_rule_prototype_model(
             'inbound_tcp_sg', sg_id=sg_id)
         res = ibm_vpc_client.create_security_group_rule(
             sg_id, sg_rule_prototype).get_result()
 
-        # add all other required rules
+        # add all other required rules configured by the specific backend
         for rule in self.sg_rules.keys():
             sg_rule_prototype = self._build_security_group_rule_prototype_model(
                 rule)
@@ -248,32 +249,34 @@ class VPCConfig(ConfigBuilder):
 
             zone_obj = self._select_zone(vpc_id, region)
 
-            if not vpc_name:
+            # User didn't choose an existing VPC 
+            if not vpc_name:    
                 resource_group_id = self._select_resource_group()
                 resource_group = {'id': resource_group_id}
 
-                # find next default vpc name
+                # Create a unique VPC name 
                 vpc_default_name = self.vpc_name
                 c = 1
                 vpc_names = [vpc_obj['name'] for vpc_obj in vpc_objects]
-                while vpc_default_name in vpc_names:
+                while vpc_default_name in vpc_names:    # find next default available vpc name
                     vpc_default_name = f'{self.vpc_name}-{c}'
                     c += 1
 
-                vpc_obj = self._create_vpc(
-                    ibm_vpc_client, resource_group, vpc_default_name)
-                if not vpc_obj:
+                vpc_obj = self._create_vpc(ibm_vpc_client, resource_group, vpc_default_name)
+                if not vpc_obj:     # User declined to create a new VPC
                     continue
-                else:
+                else:   # User created a new VPC
                     vpc_name = vpc_obj['name']
                     vpc_id = vpc_obj['id']
 
                     print(f"\n\n\033[92mVPC {vpc_name} been created\033[0m")
 
-                    self._create_vpc_peripherials(ibm_vpc_client, vpc_obj, zone_obj, resource_group)
+                    self._create_vpc_peripherals(ibm_vpc_client, vpc_obj, zone_obj, resource_group)
                     break
+
+            # User chose an existing VPC 
             else:
-                # validate chosen vpc has all required
+                # validate chosen vpc has all requirements
                 # starting from validating each of its subnets has public gateway
 
                 @spinner
@@ -344,7 +347,7 @@ class VPCConfig(ConfigBuilder):
             
                 zones_objects = self.ibm_vpc_client.list_region_zones(region).get_result()['zones']
                 zone_obj = zones_objects[0]
-                self._create_vpc_peripherials(self.ibm_vpc_client, vpc_obj, zone_obj, resource_group)
+                self._create_vpc_peripherals(self.ibm_vpc_client, vpc_obj, zone_obj, resource_group)
 
         subnet_objects = self.ibm_vpc_client.list_subnets().get_result()['subnets']
         return vpc_obj, subnet_objects[0]['zone'], subnet_objects[0]['id']
@@ -370,7 +373,7 @@ class VPCConfig(ConfigBuilder):
                 print(f"\n\n\033[92mVPC {vpc_obj['name']} been created\033[0m")
 
             zone_obj = self._select_zone(vpc_obj['id'], region, auto=True)
-            self._create_vpc_peripherials(self.ibm_vpc_client,
+            self._create_vpc_peripherals(self.ibm_vpc_client,
                                         vpc_obj,
                                         zone_obj,
                                         resource_group)
