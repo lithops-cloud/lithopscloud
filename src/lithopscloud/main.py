@@ -7,8 +7,8 @@ from lithopscloud.modules.config_verification import verify_config_file
 
 from lithopscloud.modules.utils import get_option_from_list, color_msg, Color, verify_paths
 
-LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops Gen2', 'Lithops Cloud Functions', \
-                                                             'Lithops Code Engine', 'Ray Gen2', 'Local Host'
+LITHOPS_GEN2, LITHOPS_CF, LITHOPS_CE, RAY_GEN2, LOCAL_HOST = 'Lithops IBM Gen2', 'Lithops IBM Cloud Functions', \
+                                                             'Lithops IBM Code Engine', 'Ray IBM Gen2', 'Local Host'
 
 
 backends = [
