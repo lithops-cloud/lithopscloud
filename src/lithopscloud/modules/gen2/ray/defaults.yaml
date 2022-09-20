@@ -22,7 +22,7 @@ idle_timeout_minutes: 5
 # Cloud-provider specific configuration.
 provider:
     type: external
-    module: gen2.node_provider.Gen2NodeProvider
+    module: gen2.node_provider.IBMGen2NodeProvider
     endpoint: ""
     zone_name: ""
     iam_api_key: ""
