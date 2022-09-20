@@ -44,7 +44,8 @@ def validate_security_group_rules(ibm_vpc_client, sg_id):
     sg = ibm_vpc_client.get_security_group(sg_id).get_result()
 
     for rule in sg['rules']:
-        # check inboud and outbound rules
+
+        # check outbound rules that are not associated with a specific IP address range 
         if rule['direction'] == 'outbound' and rule['remote'] == {'cidr_block': '0.0.0.0/0'}:
             if rule['protocol'] == 'all':
                 # outbound is fine!
@@ -54,7 +55,10 @@ def validate_security_group_rules(ibm_vpc_client, sg_id):
                 required_rules.pop('outbound_tcp_all', None)
             elif rule['protocol'] == 'udp':
                 required_rules.pop('outbound_udp_all', None)
+        
+        # Check inbound rules 
         elif rule['direction'] == 'inbound':
+            # check rules that are not associated with a specific IP address range
             if rule['remote'] == {'cidr_block': '0.0.0.0/0'}:
                 # we interested only in all or tcp protocols
                 if rule['protocol'] == 'all':
@@ -81,8 +85,9 @@ def validate_security_group_rules(ibm_vpc_client, sg_id):
                         elif port_min <= 8265 and port_max >= 8265:
                             required_rules.pop('inbound_tcp_8265', None)
 
+            # rule regards private traffic within the VSIs associated with the security group  
             elif rule['remote'].get('id') == sg['id']:
-                # validate that inboud trafic inside group available
+                # validate that inbound traffic inside group available
                 if rule['protocol'] == 'all' or rule['protocol'] == 'tcp':
                     required_rules.pop('inbound_tcp_sg', None)
 

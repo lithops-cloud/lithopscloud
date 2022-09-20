@@ -7,7 +7,6 @@ import tempfile
 import time
 from enum import Enum
 import inquirer
-import yaml
 from inquirer import errors
 from ibm_platform_services import IamIdentityV1
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
@@ -26,6 +25,13 @@ NEW_INSTANCE = 'Create a new'  # guaranteed substring in every 'create new insta
 
 
 def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothing=None, validate=True, carousel=True):
+    """returns the user's choice out of given 'choices'. 
+        :param msg - msg to display the user before presenting choices
+        :param choices - list of choices to present user with
+        :param default - default choice out of the lists of choices presented to user
+        :param choice_key - if 'choices' is a dict `choice_key` represents the key associated with the desired values
+        :param do_nothing:str - an additional choice for 'choices' to be appended to the list
+        :param carousel - when set to true allows user to rotate from last to first choice and vice-a-versa    """
     if (len(choices) == 0 and do_nothing == None):
         error_msg = f"There no option for {msg}"
         print(error_msg)
@@ -64,7 +70,8 @@ def get_option_from_list(msg, choices, default=None, choice_key='name', do_nothi
 
 def inquire_user(msg, choices, default=None, choice_key='name', create_new_instance=None,
                  handle_strings=False, validate=True, carousel=True):
-    """prompt options to user and returns user choice.
+    
+    """returns the user's choice out of given 'choices'. 
       :param str create_new_instance: when initialized adds a 'create' option that allows the user
                             to create an instance rather than to opt for one of the options.
       :param bool handle_strings: when set to True handles input of list of strings instead of list of dicts.
@@ -106,16 +113,19 @@ def inquire_user(msg, choices, default=None, choice_key='name', create_new_insta
         return next((x for x in choices if x[choice_key] == answers['answer']), None)
 
 def find_obj(objects, msg, obj_id=None, obj_name=None, default=None, do_nothing=None):
+    """returns object matching the specified keys' values: obj['id'] or obj['name']. Else, returns a user chosen object.   
+    obj_id and obj_name are the values for: 'id' and 'name' - common keys in the API response format of IBM SDK.
+    """
     obj = None
     if obj_id:
-        # just validating that obj exists
+        # validating that obj exists
         obj = next((obj for obj in objects if obj['id'] == obj_id), None)
         if not obj:
             raise Exception(f'Object with specified id {obj_id} not found')
     if obj_name:
         obj = next((obj for obj in objects if obj['name'] == obj_name), None)
-
-    if not obj:
+    
+    if not obj:  # no matching values were found, collecting user's choice from 'objects'.
         obj = get_option_from_list(
             msg, objects, default=default, do_nothing=do_nothing)
     return obj
@@ -145,6 +155,16 @@ def get_region_by_endpoint(endpoint):
 
 
 def find_default(template_dict, objects, name=None, id=None, substring=False):
+    """returns an object in 'objects' who's value for the field 'name' or 'id' equals that of item[name]/item[id] for an item in template_dict
+
+    Args:
+        template_dict (dict): dict from an existing configuration file that may contain desired values. 
+        objects (list of dicts): list of dicts that may contain a key with the desired value.  
+        name (str): name of the key of an object within 'template_dict' that contains the desired value, to be evaluated against obj['name'] of 'objects'.
+        id (str): name of the key of an object within 'template_dict' that contains the desired value, to be evaluated against obj['id'] of 'objects'
+        substring (bool): if set to true, the substring value of the desired val in template_dict is tested against the value of 'objects' 
+    """
+
     val = None
     for k, v in template_dict.items():
         if isinstance(v, dict):
@@ -169,6 +189,7 @@ def find_default(template_dict, objects, name=None, id=None, substring=False):
 
 
 def free_dialog(msg, default=None, validate=True):
+    """ Returns user's answer to an open-ended question """
     question = [
         inquirer.Text('answer',
                       message=msg,
