@@ -9,7 +9,7 @@ class FloatingIpConfig(ConfigBuilder):
         head_ip = None
         floating_ips = self.ibm_vpc_client.list_floating_ips().get_result()['floating_ips']
         
-        free_floating_ips = [x for x in floating_ips if not x.get('target')]
+        free_floating_ips = [ip for ip in floating_ips if not ip.get('target') and self.base_config['provider']['zone_name']==ip['zone']['name']]
         if free_floating_ips:
             ALLOCATE_NEW_FLOATING_IP = 'Allocate new floating ip'
             head_ip_obj = get_option_from_list("Choose head ip", free_floating_ips, choice_key='address', do_nothing=ALLOCATE_NEW_FLOATING_IP)
