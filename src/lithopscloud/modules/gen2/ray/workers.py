@@ -2,7 +2,6 @@ import re
 from typing import Any, Dict
 
 import inquirer
-from rsa import verify
 from lithopscloud.modules.config_builder import ConfigBuilder
 from lithopscloud.modules.utils import find_default, get_option_from_list
 
